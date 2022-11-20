@@ -4,6 +4,21 @@
 start = 690; %dummy data - 11:30 PM
 duration = 40; % 40 minutes of charging
 
+%% Generate random samples of customers based on a penetration level
+total_num_customers = 220; %this can be altered for future studies
+
+%specifying penetration level
+pen_level = 0.1;
+num_ev_customers = pen_level*total_num_customers;
+
+%specifying random customers that have EVs based on penetration level
+ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
+
+%level of charging is a uniform distribution, each customer is assigned a
+%particular level of charging
+customer_charging_levels = randi(2,1,num_ev_customers);
+
+
 
 %% Importing Downsampled Load Data - Downsampling done in python
 % See <incl filename>
@@ -69,20 +84,6 @@ for i=0:23
         P_profs(1,i+1) = base_load(( ((i)*(12))+1 ),:).PAvgSingleCustomer;
     end
 end
-%% Generate random samples of customers based on a penetration level
-total_num_customers = 220; %this can be altered for future studies
-
-%specifying penetration level
-pen_level = 0.1;
-num_ev_customers = pen_level*length(total_customers);
-
-%specifying random customers that have EVs based on penetration level
-ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
-
-%level of charging is a uniform distribution, each customer is assigned a
-%particular level of charging
-customer_charging_levels = randi(2,1,num_ev_customers);
-
 
 %% Import base loads for all customers
 
