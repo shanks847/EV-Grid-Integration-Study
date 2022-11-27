@@ -1,9 +1,3 @@
-
-%% Assigning dummy data for testing
-
-start = 690; %dummy data - 11:30 PM
-duration = 40; % 40 minutes of charging
-
 %% Generate random samples of customers based on a penetration level
 total_num_customers = 220; %this can be altered for future studies
 
@@ -13,114 +7,9 @@ num_ev_customers = pen_level*total_num_customers;
 
 %specifying random customers that have EVs based on penetration level
 ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
-
 %level of charging is a uniform distribution, each customer is assigned a
 %particular level of charging
 customer_charging_levels = randi(2,1,num_ev_customers);
-
-%% Importing Downsampled Load Data - Downsampling done in python
-% See <incl filename>
-opts = delimitedTextImportOptions("NumVariables", 4);
-
-% Specify range and delimiter
-opts.DataLines = [1, Inf];
-opts.Delimiter = ",";
-
-% Specify column names and types
-opts.VariableNames = ["Time", "Var2", "PAvgSingleCustomer", "Var4"];
-opts.SelectedVariableNames = ["Time", "PAvgSingleCustomer"];
-opts.VariableTypes = ["datetime", "string", "double", "string"];
-
-% Specify file level properties
-opts.ExtraColumnsRule = "ignore";
-opts.EmptyLineRule = "read";
-
-% Specify variable properties
-opts = setvaropts(opts, ["Var2", "Var4"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["Var2", "Var4"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
-
-% Import the data
-downsampledcbl = readtable("C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\downsampled_cbl.csv", opts);
-downsampledcbl(1,:) = []
-clear opts
-idx = 1:286
-downsampledcbl = addvars(downsampledcbl,idx')
-downsampledcbl = renamevars(downsampledcbl,'Var3','Index')
-%% Testing Base Load Aggregation
-
-base_load = downsampledcbl; %test base load data
-charging_level = 1; %test charing level
-
-%determining charging index start
-start_idx = ceilDiv(start,5);
-dur = ceilDiv(duration,5);
-
-if charging_level == 1
-    charger_power = 1920/1000;
-else
-    charger_power = 6600/1000;
-end
-
-for row=start_idx:(dur+start_idx)
-    %disp('\nBEFORE BLAGG:')
-    %base_load(row,:).PAvgSingleCustomer
-    %base_load(row,["PAvgSingleCustomer","Index"])
-    base_load(row,:).PAvgSingleCustomer = base_load(row,:).PAvgSingleCustomer + charger_power;
-    %disp('\nAFTER BLAGG:')
-    %base_load(row,:).PAvgSingleCustomer
-end
-%% Disaggregating Load into hourly utilization profile
-P_profs = zeros(1,24);
-%this will be refined down into a function later
-for i=0:23
-    if i == 0 
-        P_profs(1,1) = base_load(1,:).PAvgSingleCustomer;
-    elseif i==23
-        P_profs(1,24) = base_load(height(base_load)-9,:).PAvgSingleCustomer;
-    else
-        P_profs(1,i+1) = base_load(( ((i)*(12))+1 ),:).PAvgSingleCustomer;
-    end
-end
-
-%% Import base loads for all customers
-
-%[!]NOTE : THIS ASSUMES there exists a column of data for each in
-%total_num_customers
-
-opts = delimitedTextImportOptions("NumVariables", num_ev_customers+1);
-
-% Specify range and delimiter
-opts.DataLines = [2, Inf];
-opts.Delimiter = ",";
-
-var_names = ["Time"];
-var_types = ["datetime"];
-%creating a list
-for i=1:total_num_customers
-    var_names = horzcat(var_names,strcat("P",string(i)));
-    var_types = horzcat(var_types,"double");
-end
-
-% Specify column names and types
-opts.VariableNames = var_names;
-opts.VariableTypes = var_types;
-
-% Specify file level properties
-opts.ExtraColumnsRule = "ignore";
-opts.EmptyLineRule = "read";
-
-% Specify variable properties
-opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
-
-% Import the data
-customerutilizationxformed = readtable("C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\customer_utilization_xformed.csv", opts);
-clear opts
-%% Reformating baseloads and customer utilization data into matlab friendly DS
-t1b = downsampledcbl(1,1).Time
-t2b = downsampledcbl(2,1).Time
-tstep = minutes(minutes(time(between(t1b,t2b))));
-bltt = timetable(downsampledcbl.PAvgSingleCustomer,'TimeStep',tstep)
 
 %% Importing downsampled customer load
 
@@ -165,37 +54,80 @@ level1_durations = makedist("GeneralizedPareto",'theta',-94.34,'sigma',114.34,'k
 %% Specify distributions for level 2 start times and durations
 level2_start_times = makedist("Normal",916.60,302.02);
 level2_durations = makedist("GeneralizedPareto",'theta',16.92,'sigma',3.08,'k',0.55);
-%% Generate a matrix showing EV Customers and their charging events
+%% [ ! ] Modifyig base loads for a scenario of EV Customers
 
-%generating a matrix of customer IDs, level IDs, starting time, duration
-scenario_start_times = zeros(num_ev_customers,1);
-scenario_durations = zeros(num_ev_customers,1);
+scenario_data = table(ev_customer_IDs,customer_charging_levels', ...
+    'VariableNames',["Customer ID","Charging Level"]);
 
-for i=1:num_ev_customers
-    if customer_charging_levels(i) == 1
-        scenario_start_times(i) = level1_start_times.random();
-        scenario_durations(i) = level1_durations.random();
-        while scenario_durations(i) < 0
-            scenario_durations(i) = level1_durations.random();
-        end
+modified_cutils = cutilres_tt;
+start_distribution = 0;
+duration_distribution = 0;
+customer_ID = 0;
+init_data = {"PX",0,minutes(0),minutes(0)};
+scenario_details = cell2table(init_data,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+
+for i=1:size(scenario_data,1)
+    customer_ID = scenario_data{i,1};
+    scenario_clevel = scenario_data{i,2};
+    if scenario_clevel == 1
+        start_distribution = level1_start_times;
+        duration_distribution = level1_durations;
     else
-        scenario_start_times(i) = level2_start_times.random();
-        scenario_durations(i) = level2_durations.random();
-        while scenario_durations(i) < 0
-            scenario_durations(i) = level2_durations.random();
-        end
+        start_distribution = level2_start_times;
+        duration_distribution = level2_durations;
+    end
+    
+    [event_details, modified_cutils] = base_load_aggregation(start_distribution, ...
+        duration_distribution,scenario_clevel,customer_ID,modified_cutils);
+    if i == 1
+        scenario_details = cell2table(event_details,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+    else
+        scenario_details = [scenario_details; event_details];
     end
 end
 
-scenario_data = table(ev_customer_IDs,customer_charging_levels', ...
-    scenario_start_times,scenario_durations, ...
-    'VariableNames',["Customer ID","Charging Level", ...
-    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
 
+scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
+scenario_details.("Start Time(Minutes from 00:00 AM)")
+scenario_details
+
+
+
+
+
+
+
+
+%% ==========================   TESTING ============================================
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+%               NO
+% 
+% 
+% 
+%       MAN'S
+% 
+% 
+% 
+% 
+%                     LAND
+% 
+% 
+% 
+%       :) 
+% 
+% 
 %% Testing SINGLE CUSTOMER BASE LOAD AGGREGATION
 
 %mask charging profile
-tstep = bltt(2,1).Time - bltt(1,1).Time; %determining timeseries length
+tstep = cutilhres_tstep;
 test_tt = timetable(tdata','TimeStep',tstep,'StartTime',minutes(400)); %creating a timetable of the baseload
 tr = timerange(minutes(405),minutes(415));
 test_tt(tr,:).Var1 = test_tt(tr,:).Var1 + [1;1] %testing to see if I can modify rows of data based on mask
@@ -216,29 +148,6 @@ disp("==================== Base Load After (REDUCED TO AREA OF MASK) ===========
 test_bload(charging_mask,:).Var1
 
 
-%% Modifyig base loads for a scenario of EV Customers
-
-scenario_data = table(ev_customer_IDs,customer_charging_levels', ...
-    'VariableNames',["Customer ID","Charging Level"]);
-
-modified_cutils = cutilres_tt;
-start_distribution = 0;
-duration_distribution = 0;
-customer_ID = 0
-for i=1:size(scenario_data,1)
-    customer_ID = scenario_data{i,1};
-    scenario_clevel = scenario_data{i,2}
-    if scenario_clevel == 1
-        start_distribution = level1_start_times;
-        duration_distribution = level1_durations;
-    else
-        start_distribution = level2_start_times;
-        duration_distribution = level2_durations;
-    end
- 
-    modified_cutils = base_load_aggregation(start_distribution, ...
-        duration_distribution,scenario_clevel,customer_ID,modified_cutils)
-end
 
 
 %% Testing single customer base load aggregation from full db
@@ -268,11 +177,11 @@ charging_mask = timerange(minutes(sst),scenario_end_time); %creating mask to iso
 
 %import base load
 num_timestamps = size(cutilres_cpy(charging_mask,customer_ID),1);
-disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
-cutilres_cpy(charging_mask,customer_ID)
+% disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
+% cutilres_cpy(charging_mask,customer_ID)
 cutilres_cpy{charging_mask,[customer_ID]} = cutilres_cpy{charging_mask,[customer_ID]} + ones(num_timestamps,1)*charging_level;
-disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
-cutilres_cpy(charging_mask,customer_ID)
+% disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
+% cutilres_cpy(charging_mask,customer_ID)
 
 
 %% Testing base_load_aggregation function
@@ -281,3 +190,34 @@ cutilres_fcpy = cutilres_tt;
 mod_load = base_load_aggregation(level1_start_times,level1_durations, ...
     2, 1, cutilres_fcpy);
 
+
+%% NOMAN'S LAND
+
+%empty_table = table('Customer ID','Charging Level','Start Time', 'Duration')
+
+cidca = []; %customer ID cell array
+lca = []; %charging level cell array
+stca = timetable(); %start time cell array
+dtca = timetable(); %duration cell array
+
+% cidca(1) = "P1";
+% lca(1) = 1;
+% stca(1,1) = {minutes(sst)};
+% dtca(1,1) = {minutes(sp)};
+
+sca = {'P1',1,minutes(sst),minutes(sp)}; %scenario details table
+sct = cell2table(sca,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+scb = {'P2',1,minutes(sst),minutes(sp)};
+sct = [sct;scb];
+sct.("Customer ID") = string(sct.("Customer ID"));
+
+sct = cell2table({'PX',0,minutes(0),minutes(0)},"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+
+% approach2_sct = table(cidca,lca,stca,dtca)
+
+% scenario_details = table(cidca,lca, ...
+%     stca,dtca, ...
+%     'VariableNames',["Customer ID","Charging Level", ...
+%     "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);

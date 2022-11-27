@@ -1,5 +1,5 @@
 %function [aggregated_customer_load,load_profiles] = base_load_aggregation(customer_base_load,charging_level,start_time,duration)
-function [modified_cutils] = base_load_aggregation(start_distribution,duration_distribution, scenario_clevel, customer_ID, cutilres_tt)
+function [event_details,modified_cutils] = base_load_aggregation(start_distribution,duration_distribution, scenario_clevel, customer_ID, cutilres_tt)
 %BASE_LOAD_AGGREGATION  Adds power contribution from a randomized charging
 %event to the base load of a customer
 %start_distribution - PDF of start times for the charging level of that
@@ -41,11 +41,12 @@ charging_mask = timerange(minutes(sst),scenario_end_time); %creating mask to iso
 
 %import base load
 num_timestamps = size(modified_cutils(charging_mask,customer_ID),1);
-disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
-modified_cutils(charging_mask,customer_ID)
+%disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
+%modified_cutils(charging_mask,customer_ID)
 modified_cutils{charging_mask,[customer_ID]} = modified_cutils{charging_mask,[customer_ID]} + ones(num_timestamps,1)*charging_level;
-disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
-modified_cutils(charging_mask,customer_ID)
+%disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
+%modified_cutils(charging_mask,customer_ID)
 
+event_details = {customer_ID,scenario_clevel,minutes(sst),minutes(sp)};
 
 end
