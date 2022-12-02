@@ -1,0 +1,178 @@
+
+tic %start timer
+%Reading and storing the raw data in variable nT
+nT = readtable("v2_L1Data.xlsx");
+
+[rowTot, colTot] = size(nT);
+
+%%Comment if the raw data has entry column in column position 1
+aEntry = 1:height(nT);1;
+entryCol = aEntry';
+nT.autoEntry = entryCol;
+T = movevars(nT,'autoEntry','Before',1); %To move vars to beginning of the table T 
+
+
+for col = 3 : colTot %cycling through the 'L1Data.xlsx' file 
+
+    ent_a1 = T(:,1); %stores the entry number
+    dateTime_a = T(:,2); %stores the dates and times
+    data_b = T(:,col); %stores the data from customer1
+
+    % Cleaning the data i.e removing any single zeroes from the charging events
+    counta = 1;
+    ab = table2array(data_b);
+    while counta <= (height(ab) - 2)
+        if (ab(counta,:)== 1920 && ab(counta+1,:)==0 && ab(counta+2,:)== 1920)
+            ab(counta+1,:) = 1920;
+
+        elseif (ab(counta,:)==0 && ab(counta+1,:)==1920 && ab(counta+2,:)==1920 && ab(counta+3,:)==0 )
+            ab(counta+2,:) = 0;
+            ab(counta+3,:) = 0;
+        end
+
+        if counta<height(ab)
+            counta = counta+1;
+        else
+            counta = height(ab)-2;
+        end
+    end
+
+    %Cleaning the data - removing single 1920 events
+    countb = 1;
+    while countb <= (height(ab) - 2)
+        if (ab(countb,:)== 0 && ab(countb+1,:)==1920 && ab(countb+2,:)== 0)
+            ab(countb+1,:) = 0;
+
+        else
+            %do nothing
+        end
+
+        if countb<height(ab)
+            countb = countb+1;
+        else
+            countb = height(ab)-2;
+        end
+    end
+    column3data= ab; %changing b to an array
+    %
+    array_a= table2array(dateTime_a); %converts the table stored in 'a' into an array stored in 'array_a'
+    td_plain = datetime(array_a);
+    %
+    columna1entry = table2array(ent_a1); %changing a1 to an array
+
+    H = table(columna1entry,td_plain, column3data);
+
+    % %Finds all the rows that has the value 1920 in 'column3data'
+    idx = H.column3data ~= 0; %find what rows this is true (values are not equal to 0)
+    Tbl2 = H(idx,:); %pick out those rows (and all the columns) from Tbl1 and put them in a new table
+
+    %checking if the data in columna1entry is numeric
+    l = isnumeric(Tbl2.columna1entry);
+    
+    % %Storing the difference in entries in variable 'un'
+    un = diff(Tbl2.columna1entry)==1;
+    
+    % %Adding a 0th term (as the first result in the diff result). This is
+    % %because the diff function finds the difference between the nth and (n-1)th
+    % % term, so there was no difference for the first term and the 0th term.
+    add_to_un = zeros(1,1);
+    new_un = [add_to_un; un]; %appending 0 into first row of data
+    Tbl2.entryDiff = new_un; %adding a new column to Tbl2 (entryDiff)
+
+    k = Tbl2(Tbl2.entryDiff==0,:); %filter out the zeros from the entry difference column
+    Tbl2(Tbl2.entryDiff==1,:); %filter out the ones from the entry difference column
+
+
+    A = nnz(~Tbl2.entryDiff); %number of zeroes i.e. number of charging even clusters
+    B = nnz(Tbl2.entryDiff); % no. of ones
+    
+    table_row = height(Tbl2);  %The size of the table is based on the number
+
+    % % of events i.e. A, as opposed to the height og TBL2.
+    table_col = width(Tbl2);
+
+    %creating two dummy columns in Tbl4 named timeBegin and timeEnd. 
+    %The datetime values were stored in these two columns to dictate the
+    %datetime datatype (in said columns)
+    Tbl4.timeBegin = datetime(Tbl2.td_plain(1:A,:));
+    Tbl4.timeEnd = datetime(Tbl2.td_plain(1:A,:));
+
+    Tbl4b = struct2table(Tbl4); %creates a struct of Tbl4 so that data could be stroed in the table 
+    
+    count1 = 1; %counter
+    count2 = 2; %counter
+    x = 1;
+    
+    countnewT = 1;
+    while countnewT < A + 1
+        if (Tbl2.entryDiff(count1,:)== 0 && Tbl2.entryDiff(count2,:)==1)
+            Tbl4b.timeBegin(countnewT,:) = Tbl2.td_plain(count1,:); %place real start time in timeBegin
+            %c=Tbl4b.timeBegin(countnewT,:);
+
+        elseif (Tbl2.entryDiff(count1,:)== 1 && Tbl2.entryDiff(count2,:)==0)
+            Tbl4b.timeEnd(countnewT,:) = Tbl2.td_plain(count1,:); %place real end time in timeEnd
+            %ce=Tbl4b.timeEnd(countnewT,:);
+
+            if countnewT<A
+                countnewT = countnewT+1;
+            else
+                countnewT = A;
+            end
+
+        elseif (Tbl2.entryDiff(count1,:)== 1 && Tbl2.entryDiff(count2,:)==1) && count2 == table_row
+            countnewT = A;
+            Tbl4b.timeEnd(countnewT,:) = Tbl2.td_plain((count2),:);
+            %ce =  Tbl4b.timeEnd(countnewT,:);
+            %count2;
+            countnewT = A +1;
+            %x;
+
+        else
+
+
+        end
+
+        countnewT;
+        x = x+1;
+
+        if count1<=table_row-1
+            count1 = count1 + 1;
+        else
+            count1 = table_row-1;
+        end
+
+        if count2 < table_row
+            count2 = count2+1;
+        else
+            count2 = table_row;
+        end
+
+    end
+
+
+    %To get the durations
+    for count3 = 1:A
+        Tbl4b.durations(count3,:) = Tbl4b.timeEnd(count3,:)-Tbl4b.timeBegin(count3,:);
+    end
+
+    Tbl4c=Tbl4b; %duplicate Tbl4b
+    Tbl4c.timeEnd = []; %removes time end from the Tbl4c
+
+    Tbl4c.timeBegin.Format='HH:mm:ss'; %change the data format to time only 
+        
+    %places the old Tbl4bL1.xlsx file in recycle bin if the program is run again with
+    %different data
+    recycle on % Send to recycle bin instead of permanently deleting.
+    %delete("Tbl4bL.xlsx"); % Delete (send to recycle bin).
+    
+    if col == 3
+        %for the first column of customer data, we want column title but we
+        %do not want column titles stored for any other customer (as every
+        %customer is appended to the previous data
+        writetable(Tbl4c, 'Tbl4bL9.xlsx', "WriteVariableNames", true, "UseExcel", true, "WriteMode", "append");
+    else
+        writetable(Tbl4c, 'Tbl4bL9.xlsx', "WriteVariableNames", false, "UseExcel", true, "WriteMode", "append");
+    end
+
+end
+toc %end timer
