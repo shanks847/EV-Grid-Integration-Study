@@ -3,7 +3,7 @@ total_num_customers = 220; %this can be altered for future studies
 
 %specifying penetration level
 pen_level = 0.1;
-num_ev_customers = pen_level*total_num_customers;
+num_ev_customers = ceil(pen_level*total_num_customers);
 
 %specifying random customers that have EVs based on penetration level
 ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
