@@ -1,0 +1,23 @@
+Customer ID,Charging Level,Start Time(Minutes from 00:00 AM),Duration(Minutes)
+202,1,920 min,5 min
+60,1,1120 min,4455 min
+13,1,950 min,0 min
+198,1,1130 min,320 min
+108,1,1305 min,2075 min
+120,1,860 min,1525 min
+98,1,930 min,70 min
+74,1,880 min,375 min
+142,1,950 min,2345 min
+38,1,1405 min,355 min
+41,1,1145 min,80 min
+106,1,1075 min,1680 min
+128,1,980 min,1125 min
+210,1,690 min,105 min
+107,1,795 min,160 min
+8,1,835 min,250 min
+69,1,1020 min,70 min
+218,1,1060 min,225 min
+56,1,905 min,160 min
+190,1,375 min,260 min
+165,1,1250 min,50 min
+125,1,355 min,330 min

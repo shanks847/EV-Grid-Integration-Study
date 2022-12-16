@@ -2,7 +2,7 @@
 total_num_customers = 220; %this can be altered for future studies
 
 %specifying penetration level
-pen_level = 0.1;
+pen_level = 0.05;
 num_ev_customers = ceil(pen_level*total_num_customers);
 
 %specifying random customers that have EVs based on penetration level
@@ -93,13 +93,69 @@ scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
 scenario_details.("Start Time(Minutes from 00:00 AM)")
 scenario_details
 
+%% GENERATING PEN. LEVEL = 5% SCENARIO
+
+%specifying penetration level
+pen_level = 0.10;
+num_ev_customers = ceil(pen_level*total_num_customers);
+
+%specifying random customers that have EVs based on penetration level
+ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
+%level of charging is a uniform distribution, each customer is assigned a
+%particular level of charging
+%customer_charging_levels = randi(2,1,num_ev_customers);
+%customer_charging_levels = ones(1,num_ev_customers);
+customer_charging_levels = ones(1,num_ev_customers)*2;
+scenario_data = table(ev_customer_IDs,customer_charging_levels', ...
+    'VariableNames',["Customer ID","Charging Level"]);
+
+modified_cutils = cutilres_tt;
+start_distribution = 0;
+duration_distribution = 0;
+customer_ID = 0;
+init_data = {"PX",0,minutes(0),minutes(0)};
+scenario_details = cell2table(init_data,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+
+for i=1:size(scenario_data,1)
+    customer_ID = scenario_data{i,1};
+    scenario_clevel = scenario_data{i,2};
+    if scenario_clevel == 1
+        start_distribution = level1_start_times;
+        duration_distribution = level1_durations;
+    else
+        start_distribution = level2_start_times;
+        duration_distribution = level2_durations;
+    end
+    
+    [event_details, modified_cutils] = base_load_aggregation(start_distribution, ...
+        duration_distribution,scenario_clevel,customer_ID,modified_cutils);
+    if i == 1
+        scenario_details = cell2table(event_details,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+    else
+        scenario_details = [scenario_details; event_details];
+    end
+end
 
 
+scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
+scenario_details.("Start Time(Minutes from 00:00 AM)")
+scenario_details
 
 
+%% PLOTTING A CUSTOMER'S LOAD PROFILE BEFORE AND AFTER AGGREGATION
 
+zeta_mod  = modified_cutils(:,['P52']); %modified load of customer selected from scenario
+zeta_base = cutilres_tt(:,'P52'); %base load of customer selected from scenario
 
-
+zeta_ce = 0; %charging event of customer selected from scenario
+zeta_mod = renamevars(zeta_mod,'P52','Modified');
+zeta = addvars(zeta_mod,zeta_base.P52);
+zeta = renamevars(zeta,'Var2','Base');
+s= stackedplot(movevars(zeta,'Modified','After','Base'))
+s.FontSize = 12
+s.GridVisible = "on"
 %% ==========================   TESTING ============================================
 % 
 % 
@@ -124,96 +180,98 @@ scenario_details
 %       :) 
 % 
 % 
+
+
 %% Testing SINGLE CUSTOMER BASE LOAD AGGREGATION
 
-%mask charging profile
-tstep = cutilhres_tstep;
-test_tt = timetable(tdata','TimeStep',tstep,'StartTime',minutes(400)); %creating a timetable of the baseload
-tr = timerange(minutes(405),minutes(415));
-test_tt(tr,:).Var1 = test_tt(tr,:).Var1 + [1;1] %testing to see if I can modify rows of data based on mask
-
-%making a copy of base load test data
-test_bload = bltt
-
-%make a charging scenario
-scenario_end_time = minutes(scenario_start_times(1)) + minutes(scenario_durations(1));
-charging_mask = timerange(minutes(scenario_start_times(1)),scenario_end_time);
-
-%import base load
-num_timestamps = length(test_bload(charging_mask,:).Var1);
-disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
-test_bload(charging_mask,:).Var1
-test_bload(charging_mask,:).Var1 = test_bload(charging_mask,:).Var1 + ones(num_timestamps,1)*1.920;
-disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
-test_bload(charging_mask,:).Var1
-
-
-
-
-%% Testing single customer base load aggregation from full db
-
-
-
-%specifying charging level based on generated scenario for customer
-charging_level = 1.92;
-% if customer_charging_levels(customer_ID) == 1
-%     charging_level = 1.92;
-% else
-%     charging_level = 6.6;
-% end
-
-start_distribution = level1_start_times; %testing at lev 1
-duration_distribution = level1_durations; %testing at lev 1
-customer_ID = 2;
-
-cutilres_cpy = cutilres_tt;
-
-%make a charging scenario
-sst = 5*round(start_distribution.random()/5); %generating scenario start time from start time distribution
-sp = 5*round(duration_distribution.random()/5); %generating scenario duration from duration distribution
-scenario_end_time = minutes(sst) + minutes(sp);
-%rounding minutes to multiples of 5 to improve stability
-charging_mask = timerange(minutes(sst),scenario_end_time); %creating mask to isolate period of charging so there values can be modified
-
-%import base load
-num_timestamps = size(cutilres_cpy(charging_mask,customer_ID),1);
+% %mask charging profile
+% tstep = cutilhres_tstep;
+% test_tt = timetable(tdata','TimeStep',tstep,'StartTime',minutes(400)); %creating a timetable of the baseload
+% tr = timerange(minutes(405),minutes(415));
+% test_tt(tr,:).Var1 = test_tt(tr,:).Var1 + [1;1] %testing to see if I can modify rows of data based on mask
+% 
+% %making a copy of base load test data
+% test_bload = bltt
+% 
+% %make a charging scenario
+% scenario_end_time = minutes(scenario_start_times(1)) + minutes(scenario_durations(1));
+% charging_mask = timerange(minutes(scenario_start_times(1)),scenario_end_time);
+% 
+% %import base load
+% num_timestamps = length(test_bload(charging_mask,:).Var1);
 % disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
-% cutilres_cpy(charging_mask,customer_ID)
-cutilres_cpy{charging_mask,[customer_ID]} = cutilres_cpy{charging_mask,[customer_ID]} + ones(num_timestamps,1)*charging_level;
+% test_bload(charging_mask,:).Var1
+% test_bload(charging_mask,:).Var1 = test_bload(charging_mask,:).Var1 + ones(num_timestamps,1)*1.920;
 % disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
-% cutilres_cpy(charging_mask,customer_ID)
-
-
-%% Testing base_load_aggregation function
-
-cutilres_fcpy = cutilres_tt;
-mod_load = base_load_aggregation(level1_start_times,level1_durations, ...
-    2, 1, cutilres_fcpy);
-
-
-%% NOMAN'S LAND
-
-%empty_table = table('Customer ID','Charging Level','Start Time', 'Duration')
-
-cidca = []; %customer ID cell array
-lca = []; %charging level cell array
-stca = timetable(); %start time cell array
-dtca = timetable(); %duration cell array
-
-% cidca(1) = "P1";
-% lca(1) = 1;
-% stca(1,1) = {minutes(sst)};
-% dtca(1,1) = {minutes(sp)};
-
-sca = {'P1',1,minutes(sst),minutes(sp)}; %scenario details table
-sct = cell2table(sca,"VariableNames",["Customer ID","Charging Level", ...
-    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
-scb = {'P2',1,minutes(sst),minutes(sp)};
-sct = [sct;scb];
-sct.("Customer ID") = string(sct.("Customer ID"));
-
-sct = cell2table({'PX',0,minutes(0),minutes(0)},"VariableNames",["Customer ID","Charging Level", ...
-    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+% test_bload(charging_mask,:).Var1
+% 
+% 
+% 
+% 
+% %% Testing single customer base load aggregation from full db
+% 
+% 
+% 
+% %specifying charging level based on generated scenario for customer
+% charging_level = 1.92;
+% % if customer_charging_levels(customer_ID) == 1
+% %     charging_level = 1.92;
+% % else
+% %     charging_level = 6.6;
+% % end
+% 
+% start_distribution = level1_start_times; %testing at lev 1
+% duration_distribution = level1_durations; %testing at lev 1
+% customer_ID = 2;
+% 
+% cutilres_cpy = cutilres_tt;
+% 
+% %make a charging scenario
+% sst = 5*round(start_distribution.random()/5); %generating scenario start time from start time distribution
+% sp = 5*round(duration_distribution.random()/5); %generating scenario duration from duration distribution
+% scenario_end_time = minutes(sst) + minutes(sp);
+% %rounding minutes to multiples of 5 to improve stability
+% charging_mask = timerange(minutes(sst),scenario_end_time); %creating mask to isolate period of charging so there values can be modified
+% 
+% %import base load
+% num_timestamps = size(cutilres_cpy(charging_mask,customer_ID),1);
+% % disp("==================== Base Load Before (REDUCED TO AREA OF MASK) ====================")
+% % cutilres_cpy(charging_mask,customer_ID)
+% cutilres_cpy{charging_mask,[customer_ID]} = cutilres_cpy{charging_mask,[customer_ID]} + ones(num_timestamps,1)*charging_level;
+% % disp("==================== Base Load After (REDUCED TO AREA OF MASK) ====================")
+% % cutilres_cpy(charging_mask,customer_ID)
+% 
+% 
+% %% Testing base_load_aggregation function
+% 
+% cutilres_fcpy = cutilres_tt;
+% mod_load = base_load_aggregation(level1_start_times,level1_durations, ...
+%     2, 1, cutilres_fcpy);
+% 
+% 
+% %% NOMAN'S LAND
+% 
+% %empty_table = table('Customer ID','Charging Level','Start Time', 'Duration')
+% 
+% cidca = []; %customer ID cell array
+% lca = []; %charging level cell array
+% stca = timetable(); %start time cell array
+% dtca = timetable(); %duration cell array
+% 
+% % cidca(1) = "P1";
+% % lca(1) = 1;
+% % stca(1,1) = {minutes(sst)};
+% % dtca(1,1) = {minutes(sp)};
+% 
+% sca = {'P1',1,minutes(sst),minutes(sp)}; %scenario details table
+% sct = cell2table(sca,"VariableNames",["Customer ID","Charging Level", ...
+%     "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+% scb = {'P2',1,minutes(sst),minutes(sp)};
+% sct = [sct;scb];
+% sct.("Customer ID") = string(sct.("Customer ID"));
+% 
+% sct = cell2table({'PX',0,minutes(0),minutes(0)},"VariableNames",["Customer ID","Charging Level", ...
+%     "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
 
 % approach2_sct = table(cidca,lca,stca,dtca)
 
