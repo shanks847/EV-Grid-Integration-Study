@@ -1,4 +1,3 @@
-%function [aggregated_customer_load,load_profiles] = base_load_aggregation(customer_base_load,charging_level,start_time,duration)
 function [event_details,modified_cutils] = base_load_aggregation(start_distribution,duration_distribution, scenario_clevel, customer_ID, cutilres_tt)
 %BASE_LOAD_AGGREGATION  Adds power contribution from a randomized charging
 %event to the base load of a customer
