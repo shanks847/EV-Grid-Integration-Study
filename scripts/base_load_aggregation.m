@@ -40,6 +40,15 @@ while  (sp > 1440 || sp<0)
         continue
     end
 end
+
+while  (sst > 1440 || sst <0)
+    sst = 5*round(start_distribution.random()/5);
+    if (sst < 1440 && sst >0)
+        break
+    else
+        continue
+    end
+end
 scenario_end_time = minutes(sst) + minutes(sp);
 %rounding minutes to multiples of 5 to improve stability
 charging_mask = timerange(minutes(sst),scenario_end_time); %creating mask to isolate period of charging so there values can be modified

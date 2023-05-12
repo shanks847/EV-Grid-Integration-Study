@@ -2,12 +2,8 @@
 %total_num_customers = 220; %this can be altered for future studies
 total_num_customers = 215;
 
-%specifying penetration level
-pen_level = 0.05;
-num_ev_customers = ceil(pen_level*total_num_customers);
-
 %specifying random customers that have EVs based on penetration level
-ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
+%ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
 %level of charging is a uniform distribution, each customer is assigned a
 %particular level of charging
 %customer_charging_levels = randi(2,1,num_ev_customers);
@@ -83,10 +79,10 @@ level1_durations = makedist("GeneralizedPareto",'theta',-94.34,'sigma',114.34,'k
 level2_start_times = makedist("Normal",916.60,302.02);
 level2_durations = makedist("GeneralizedPareto",'theta',16.92,'sigma',3.08,'k',0.55);
 
-%% GENERATING PEN. LEVEL = 5% SCENARIO
+%% GENERATING PEN. LEVEL = x% SCENARIO
 
 %specifying penetration level
-pen_level = 0.1;
+pen_level = 0.15;
 num_ev_customers = ceil(pen_level*total_num_customers);
 
 %specifying random customers that have EVs based on penetration level
@@ -95,8 +91,8 @@ ev_customer_IDs = randsample(total_num_customers,num_ev_customers);
 
 
 %------------       CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
-%customer_charging_levels = randi(2,1,num_ev_customers);
-customer_charging_levels = ones(1,num_ev_customers);
+customer_charging_levels = randi(2,1,num_ev_customers);
+%customer_charging_levels = ones(1,num_ev_customers);
 %customer_charging_levels = ones(1,num_ev_customers)*2;  
 scenario_data = table(ev_customer_IDs,customer_charging_levels', ...
     'VariableNames',["Customer ID","Charging Level"]);
@@ -154,6 +150,15 @@ title(append("Load Aggregation for Customer ID: ",int2str(ev_customer_IDs(1))));
 s.DisplayLabels=["Modified Load/kW","Base Load/kW"];
 s.FontSize = 12;
 s.GridVisible = "on";
+
+
+%% Generating CSVs for EMTP Simulation
+modified_cutils.Time.Format = 'hh:mm';
+% writetimetable(modified_cutils, '../data/scenarios/balanced_load/modified_loads/mload_level_1_pen_lvl_10.csv')
+% writetable(scenario_details,'../data/scenarios/balanced_load/scenario_details/sdets_level_1_pen_lvl_10.csv')
+
+writetimetable(modified_cutils, '../data/scenarios/balanced_load/modified_loads/mload_charging_level_mixed_pen_lvl_15.csv')
+writetable(scenario_details,'../data/scenarios/balanced_load/scenario_details/sdets_charging_level_mixed_pen_lvl_15.csv')
 %% ==========================   TESTING ============================================
 % 
 % 
