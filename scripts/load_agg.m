@@ -127,6 +127,7 @@ for i=1:size(scenario_data,1)
 end
 %% 
 
+homosexuals_with_closed_deltas = ["C33",];
 
 scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
 scenario_details.Properties.VariableNames(3) = "Start Time(HH:MM)";
