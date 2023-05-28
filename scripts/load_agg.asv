@@ -1,5 +1,5 @@
 %% Generate random samples of customers based on a penetration level
-clear all
+
 total_num_customers = 215;
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -35,7 +35,6 @@ customer_base_loads_tstep = minutes(minutes(customer_base_loads(2,1).Time - cust
 customer_power_data = customer_base_loads(:,2:size(customer_base_loads,2)); %isolating the power readings of the original table
 customer_base_loads_st = minutes(minute(customer_base_loads(1, 1).Time)); %start time of the utilization data
 customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer_base_loads_tstep,'StartTime',customer_base_loads_st);
-
 
 
 %% Specify distributions for level 1 start times and durations
@@ -89,38 +88,11 @@ for i=1:size(scenario_data,1)
         duration_distribution = level2_durations;
     end
     
-    [event_details,modified_customer_loads] = base_load_aggregation(...
+    [event_details,modified_customer_loads] = base_load_aggregation( ...
     customer_ID,scenario_clevel, ...
     start_distribution, duration_distribution, ...
-    customer_base_loads_tt, modified_customer_loads,closed_delta_customers);
+    customer_base_loads_tt,closed_delta_customers);
 
-%     if sum(ismember(closed_delta_customers,customer_ID)) >= 1
-%         customer_R_ID = append(customer_ID,"R");
-%         customer_B_ID = append(customer_ID,"B");
-%         
-%         zeta_white_phase  = modified_customer_loads(:,customer_ID); %modified load of customer selected from scenario on the white phase
-%         zeta_red_phase = modified_customer_loads(:,customer_R_ID); %modified load of customer selected from scenario on the red phase
-%         zeta_black_phase = modified_customer_loads(:,customer_B_ID); %modified load of customer selected from scenario on the black phase
-%         zeta_base = customer_base_loads_tt(:,customer_ID); %base load of customer selected from scenario
-%         
-%         zeta_red_phase = renamevars(zeta_red_phase,customer_R_ID,'Red Phase');
-%         zeta_white_phase = renamevars(zeta_white_phase,customer_ID,'White Phase');
-%         zeta_black_phase = renamevars(zeta_black_phase,customer_B_ID,'Black Phase');
-%         
-%         zeta = join( zeta_base,zeta_red_phase);
-%         zeta = join(zeta,zeta_white_phase);
-%         zeta = join(zeta,zeta_black_phase);
-%         
-%         zeta.Time.Format = 'hh:mm';
-%         
-%         s = stackedplot(zeta)
-%          
-%         title(append("Load Aggregation for Customer ID: ",customer_ID));
-%         s.DisplayLabels=["Base Load/kW","Modified Red Phase/kW", ...
-%             "Modified White Phase/kW","Modified Black Phase/kW"];
-%         s.FontSize = 12;
-%         s.GridVisible = "on"
-%    end
     if i == 1
         scenario_details = cell2table(event_details,"VariableNames",["Customer ID","Charging Level", ...
     "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
@@ -139,20 +111,20 @@ scenario_details.("Duration(HH:MM)").Format = 'hh:mm';
 scenario_details
 
 %% PLOTTING A CUSTOMER'S LOAD PROFILE BEFORE AND AFTER AGGREGATION
-% test_idx = append('P',int2str(ev_customer_IDs(1)));
-% zeta_mod  = modified_customer_loads(:,test_idx); %modified load of customer selected from scenario
-% zeta_base = cutilres_tt(:,test_idx); %base load of customer selected from scenario
-% 
-% zeta_ce = 0; %charging event of customer selected from scenario
-% zeta_mod = renamevars(zeta_mod,test_idx,'Modified');
-% zeta = join(zeta_mod, zeta_base);
-% zeta.Time.Format = 'hh:mm';
-% %zeta = renamevars(zeta,'Var2','Base');
-% s = stackedplot(zeta)
-% title(append("Load Aggregation for Customer ID: ",int2str(ev_customer_IDs(1))));
-% s.DisplayLabels=["Modified Load/kW","Base Load/kW"];
-% s.FontSize = 12;
-% s.GridVisible = "on";
+test_idx = append('P',int2str(ev_customer_IDs(1)));
+zeta_mod  = modified_customer_loads(:,test_idx); %modified load of customer selected from scenario
+zeta_base = cutilres_tt(:,test_idx); %base load of customer selected from scenario
+
+zeta_ce = 0; %charging event of customer selected from scenario
+zeta_mod = renamevars(zeta_mod,test_idx,'Modified');
+zeta = join(zeta_mod, zeta_base);
+zeta.Time.Format = 'hh:mm';
+%zeta = renamevars(zeta,'Var2','Base');
+s = stackedplot(zeta)
+title(append("Load Aggregation for Customer ID: ",int2str(ev_customer_IDs(1))));
+s.DisplayLabels=["Modified Load/kW","Base Load/kW"];
+s.FontSize = 12;
+s.GridVisible = "on";
 
 
 %% Generating CSVs for EMTP Simulation
@@ -160,8 +132,8 @@ modified_customer_loads.Time.Format = 'hh:mm';
 % writetimetable(modified_cutils, '../data/scenarios/balanced_load/modified_loads/mload_level_1_pen_lvl_10.csv')
 % writetable(scenario_details,'../data/scenarios/balanced_load/scenario_details/sdets_level_1_pen_lvl_10.csv')
 
-%writetimetable(modified_customer_loads, '../data/scenarios/balanced_load/modified_loads/mload_charging_level_mixed_pen_lvl_15.csv')
-%writetable(scenario_details,'../data/scenarios/balanced_load/scenario_details/sdets_charging_level_mixed_pen_lvl_15.csv')
+writetimetable(modified_customer_loads, '../data/scenarios/balanced_load/modified_loads/mload_charging_level_mixed_pen_lvl_15.csv')
+writetable(scenario_details,'../data/scenarios/balanced_load/scenario_details/sdets_charging_level_mixed_pen_lvl_15.csv')
 %% ==========================   TESTING ============================================
 % 
 % 
@@ -188,7 +160,8 @@ modified_customer_loads.Time.Format = 'hh:mm';
 % 
 
 %% VISUALIZING CLOSED DELTA
-customer_ID = "P182";
+
+customer_ID = "P33";
 customer_R_ID = append(customer_ID,"R");
 customer_B_ID = append(customer_ID,"B");
 
