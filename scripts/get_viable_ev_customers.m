@@ -1,6 +1,6 @@
-function [modified_customer_IDs] = get_modified_customer_ID(tf_details_filepath)
+function [viable_IDs] = get_viable_ev_customers(tf_details_filepath)
 %declaring variable to hold prefixed IDs
-modified_customer_IDs = [];
+viable_IDs = [];
 opts = spreadsheetImportOptions("NumVariables", 4);
 
 % Specify sheet and range
@@ -22,7 +22,7 @@ tf_descs = readtable(tf_details_filepath, opts, "UseExcel", false);
 clear opts
 
 %iterate through transformer detail
-for x=1:size(tf_descs,1)
+for x=1:216
     %grab transformer power variable ID, this is the parent TF ID
     tf_P_ID = tf_descs{x,"TFPowerID"};
 
@@ -34,7 +34,7 @@ for x=1:size(tf_descs,1)
             customer_i = append(append(tf_P_ID,"C"),num2str(i));
     
             %appending to tf_customer list
-            modified_customer_IDs = [modified_customer_IDs,customer_i];
+            viable_IDs = [viable_IDs,customer_i];
     
         end
     end

@@ -1,5 +1,6 @@
-function [modified_customer_IDs] = get_modified_customer_ID(tf_details_filepath)
-%declaring variable to hold prefixed IDs
+tf_list_path = "C:/Users/Shankar Ramharack/OneDrive - The University of the West Indies, St. Augustine/Desktop/EV-Grid-Integration-Study/data/load_statistical_analysis/customers_from_disaggregation.xlsx";
+
+
 modified_customer_IDs = [];
 opts = spreadsheetImportOptions("NumVariables", 4);
 
@@ -15,10 +16,8 @@ opts.VariableTypes = ["string", "double", "double", "double"];
 opts = setvaropts(opts, "TFPowerID", "WhitespaceRule", "preserve");
 opts = setvaropts(opts, "TFPowerID", "EmptyFieldRule", "auto");
 % Import the data
-tf_descs = readtable(tf_details_filepath, opts, "UseExcel", false);
+tf_descs = readtable(tf_list_path, opts, "UseExcel", false);
 
-
-%% Clear temporary variables
 clear opts
 
 %iterate through transformer detail
@@ -38,5 +37,4 @@ for x=1:size(tf_descs,1)
     
         end
     end
-end
 end

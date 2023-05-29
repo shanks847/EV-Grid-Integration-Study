@@ -4,8 +4,8 @@ function [event_details,modified_customer_loads] = base_load_aggregation( ...
     start_distribution, duration_distribution, ...
     customer_base_loads_tt,modified_customer_loads, ...
     closed_delta_customers)
-%BASE_LOAD_AGGREGATION  Adds power contribution from a randomized charging
-%specifying charging level based on generated scenario for customer
+%BASE_LOAD_AGGREGATION  Aion from a randomized charging
+%specifying charging level based on generatedds power contributd scenario for customer
 charging_level = 0;
 if scenario_clevel == 1
     charging_level = 1.92;
