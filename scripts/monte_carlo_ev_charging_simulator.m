@@ -33,19 +33,19 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 %% Setting parameters of EV Charging Study
 
 %setting penetration level
-penetration_level = 0.5;
+penetration_level = 0.15;
 
 %declaring number of customers on feeder
-num_feeder_customers = 215;
+num_feeder_customers = 2400;
 
 %calculating number of EV customers on feeder based on penetration
 num_ev_customers = round(penetration_level*num_feeder_customers);
 numSamples = num_ev_customers;
 
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
-customer_charging_levels = randi(2,1,num_ev_customers);
+%customer_charging_levels = randi(2,1,num_ev_customers);
 %customer_charging_levels = ones(1,num_ev_customers);
-%customer_charging_levels = ones(1,num_ev_customers)*2;  
+customer_charging_levels = ones(1,num_ev_customers)*2;  
 
 
 tf_details_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
