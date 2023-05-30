@@ -82,25 +82,40 @@ charging_mask = timerange(minutes(scenario_start_time),scenario_end_time);  %cre
 %modified_customer_loads = customer_base_loads_tt;  %initializing the modified load table to the base load table
 
 
-%constraining the duration to be less than 24 hours but greater than 0
-while  (scenario_duration > 1440 || scenario_duration<0)
-    scenario_duration = 5*round(duration_distribution.random()/5);
-    if (scenario_duration < 1440 && scenario_duration>0)
+
+%constraining the start time to be less than 24 hours but greater than 0
+%DISCLAIMER: THIS WORK DOES NOT CONSIDER SCENARIOS STARTING AT THE
+%TRANSITION INTO THE NEXT DAY
+while  (scenario_start_time > 1440 || scenario_start_time <20)
+    scenario_start_time = 5*round(start_distribution.random()/5);
+    if (scenario_start_time < 1440 && scenario_start_time >0)
         break
     else
         continue
     end
 end
 
-%constraining the start time to be less than 24 hours but greater than 0
-%DISCLAIMER: THIS WORK DOES NOT CONSIDER SCENARIOS STARTING AT THE
-%TRANSITION INTO THE NEXT DAY
-while  (scenario_start_time > 1440 || scenario_start_time <0)
-    scenario_start_time = 5*round(start_distribution.random()/5);
-    if (scenario_start_time < 1440 && scenario_start_time >0)
-        break
-    else
-        continue
+if charger_level == 1
+    %constraining the duration to be less than 24 hours but greater than 20
+    %minutes
+    while  (scenario_duration > 840 || scenario_duration<20)
+        scenario_duration = 5*round(duration_distribution.random()/5);
+        if (scenario_duration < 840 && scenario_duration >= 20)
+            break
+        else
+            continue
+        end
+    end
+else
+    %constraining the duration to be less than 4 hours but greater than 20
+    %minutes
+    while  (scenario_duration > 240 || scenario_duration < 20)
+        scenario_duration = 5*round(duration_distribution.random()/5);
+        if (scenario_duration < 240 && scenario_duration >= 20)
+            break
+        else
+            continue
+        end
     end
 end
 
