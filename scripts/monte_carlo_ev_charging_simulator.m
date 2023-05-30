@@ -1,5 +1,5 @@
 clear all
-clc
+
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -19,9 +19,7 @@ opts.EmptyLineRule = "read";
 opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
 
 % Import the data
-balanced_eba_hres_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
-%balanced_eba_hres_path_UWIWS ="C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv");
-balanced_eba_hres = readtable( balanced_eba_hres_path,opts);
+balanced_eba_hres = readtable("C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv", opts);
 customer_ids = opts.VariableNames;
 customer_ids = customer_ids(2:length(customer_ids));
 clear opts
@@ -50,10 +48,9 @@ customer_charging_levels = ones(1,num_ev_customers);
 %customer_charging_levels = ones(1,num_ev_customers)*2;  
 
 
-%tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
-tf_details_local_WS_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
-%creating transformer-customer pairC:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis IDs
-tf_details_path = tf_details_local_WS_path;
+tf_details_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
+
+%creating transformer-customer pair IDs
 viable_ev_customer_IDs = get_viable_ev_customers(tf_details_path);
 
 % Generate random indices
@@ -93,9 +90,6 @@ TFPID_flat_profiles_timetable = timetable(minutes(collection_period(:)),TFPID_fl
 
 % Creating flat profile for transformer-customer mappings
 TF_CUSTOMER_flat_profiles_timetable = timetable(minutes(collection_period(:)),TF_CUSTOMER_flat_profiles{:},'VariableNames',mapping_ids');
-charging_set_counter = 1;
-%% Simulating Charging events for selected customers
-charging_mask = {};
 
 
 init_data = {"PX",0,minutes(0),minutes(0)};
@@ -131,9 +125,13 @@ for x=1:num_ev_customers
 
     %splitting the modified customer ID to check if connected transformer
     %is a closed delta
+    customer_info_split = strsplit(customer_ID, 'C');
+    tf_ID = customer_info_split(1);
+    CID = customer_info_split(2);
 
     if sum(ismember(closed_delta_customers,tf_ID)) >=1
        
+
         %Declaring red and blue suffixes for connected transformer
         tf_ID_R = append(tf_ID,"R");
         tf_ID_B = append(tf_ID,"B");
@@ -147,9 +145,6 @@ for x=1:num_ev_customers
         %charging mask and closed delta weightings-- WHITE PHASE   
         TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
             charging_mask,customer_ID} + ones(num_timestamps,1)*(2/3)*charging_load;
-
-        %Adding to white phase
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*(2/3)*charging_load;
 
         %add 1/3 load to R, this is the 1st phase on the system
         customer_R_ID = append(tf_ID,"R"); %ID for customer R-Phase ID
@@ -177,6 +172,10 @@ for x=1:num_ev_customers
         %Adding to the flat profile of the connected transformer on all
         %three phases
 
+        %Adding to white phase
+        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*(2/3)*charging_load;
+        %Adding to red phase
+        TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} +ones(num_timestamps,1)*(1/3)*charging_load;
         %Adding to black phase
         TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} +ones(num_timestamps,1)*(1/3)*charging_load;
 
@@ -204,6 +203,7 @@ end
 %% Aggregating customers loads onto their transformers
 
 modified_base_load = customer_base_loads_tt;
+
 
 for x=1:num_ev_customers
     customer_ID = ev_customer_IDs(x);
