@@ -1,5 +1,9 @@
 clear all
 clc
+%% Setting a seed to make results reproducible
+rng(1);
+
+
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -273,4 +277,7 @@ end
 scenario_details
 modified_base_load.Time.Format = 'hh:mm';
 modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
-writetable(modified_base_load_T,'penlvl_5.csv')
+%writetable(modified_base_load_T,'penlvl_15.csv')
+
+%% Writing scenario details
+writetable(scenario_details,'scn_lvl_6.csv')
