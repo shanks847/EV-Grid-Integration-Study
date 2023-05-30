@@ -8,9 +8,6 @@ function [modified_flat_base] = adding_mask_to_flat_base(charging_masks,...
 %   base_profiles then formtted in EMTP
 
 
-tf_list_path = "C:/Users/Shankar Ramharack/OneDrive - The University of the West Indies, St. Augustine/Desktop/EV-Grid-Integration-Study/data/load_statistical_analysis/customers_from_disaggregation.xlsx";
-
-
 % Getting PVAR IDs
 % Read the Excel file into a table
 closed_deltas = ["P33"]

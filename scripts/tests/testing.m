@@ -290,6 +290,45 @@ else
     s.GridVisible = "on";
 end
 
+%% 
+
+% Create dummy data for timetables
+time = datetime('now') + hours(1:10); % Example time values
+
+% Dummy data for timetable 1
+data1_P1 = rand(10, 1) * 10; % Example data for P1 in timetable 1
+data1_P2 = rand(10, 1) * 20; % Example data for P2 in timetable 1
+data1_P3 = rand(10, 1) * 15; % Example data for P3 in timetable 1
+timetable1 = timetable(time', data1_P1, data1_P2, data1_P3);
+
+% Dummy data for timetable 2
+data2_P1 = rand(10, 1) * 5;  % Example data for P1 in timetable 2
+data2_P2 = rand(10, 1) * 12; % Example data for P2 in timetable 2
+data2_P3 = rand(10, 1) * 18; % Example data for P3 in timetable 2
+timetable2 = timetable(time', data2_P1, data2_P2, data2_P3);
+timetable2 = renamevars(timetable2,timetable2.Properties.VariableNames, ...
+    timetable1.Properties.VariableNames);
+
+stackedplot(timetable1,timetable2,"CombineMatchingNames",true)
+
+% Create a figure with subplots
+% figure;
+% 
+% % Iterate over the column names
+% for i = 1:length(columnNames)
+%     % Get the variable data from each timetable
+%     data1 = timetable1{:,timetable1.Properties.VariableNames{i}};
+%     data2 = timetable1{:,timetable1.Properties.VariableNames{1}};
+%     
+%     % Create a stacked plot subplot
+%     subplot(length(columnNames), 1, i);
+%     
+%     % Plot the overlay of the corresponding variables
+%     stackedplot(data1, data2);
+%     
+%     % Set the subplot title as the variable name
+%     title(columnNames{i});
+% end
 
 
 %plot graphs of the base load, then the modified load on te Red, White and
