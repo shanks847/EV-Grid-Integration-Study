@@ -62,9 +62,7 @@ else
 
         start_distribution = makedist("Normal",916.60,302.02);
 
-        duration_distribution = makedist("GeneralizedPareto", ...
-            'theta',16.92,'sigma',3.08,'k',0.55);
-
+        duration_distribution = gmdistribution([20,130],[10,20])
         %charging_level = 6.6;
 
     else
@@ -81,6 +79,9 @@ scenario_end_time = minutes(scenario_start_time) + minutes(scenario_duration);
 charging_mask = timerange(minutes(scenario_start_time),scenario_end_time);  %creating mask to isolate period of charging so there values can be modified
 %modified_customer_loads = customer_base_loads_tt;  %initializing the modified load table to the base load table
 
+ if charger_level == 2
+     tmp = gmdistribution([20,130],[10,20]).random();
+     scenario_duration = tmp(randi(2,1));
 
 
 %constraining the start time to be less than 24 hours but greater than 0
@@ -110,7 +111,8 @@ else
     %constraining the duration to be less than 4 hours but greater than 20
     %minutes
     while  (scenario_duration > 240 || scenario_duration < 20)
-        scenario_duration = 5*round(duration_distribution.random()/5);
+        tmp = gmdistribution([20,130],[10,20]).random();
+        scenario_duration = 5*round(tmp(randi(2,1))/5);
         if (scenario_duration < 240 && scenario_duration >= 20)
             break
         else

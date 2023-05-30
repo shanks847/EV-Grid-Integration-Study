@@ -47,8 +47,8 @@ numSamples = num_ev_customers;
 
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
 %customer_charging_levels = randi(2,1,num_ev_customers);
-customer_charging_levels = ones(1,num_ev_customers);
-%customer_charging_levels = ones(1,num_ev_customers)*2;  
+%customer_charging_levels = ones(1,num_ev_customers);
+customer_charging_levels = ones(1,num_ev_customers)*2;  
 
 
 %tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
