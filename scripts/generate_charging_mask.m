@@ -106,7 +106,6 @@ end
 
 scenario_end_time = minutes(scenario_start_time) + minutes(scenario_duration);
 charging_mask = timerange(minutes(scenario_start_time),scenario_end_time,'closed'); %make a charging scenario, rounding minutes to multiples of 5 to improve stability
-
 scenario_start_time = minutes(scenario_start_time);
 scenario_duration = minutes(scenario_duration);
 

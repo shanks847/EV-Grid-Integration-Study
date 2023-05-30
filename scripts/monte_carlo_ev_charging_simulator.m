@@ -35,7 +35,7 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 %% Setting parameters of EV Charging Study
 
 %setting penetration level
-penetration_level = 0.002;
+penetration_level = 0.05;
 
 %declaring number of customers on feeder
 num_feeder_customers = 2400;
@@ -45,8 +45,8 @@ num_ev_customers = round(penetration_level*num_feeder_customers);
 numSamples = num_ev_customers;
 
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
-customer_charging_levels = randi(2,1,num_ev_customers);
-%customer_charging_levels = ones(1,num_ev_customers);
+%customer_charging_levels = randi(2,1,num_ev_customers);
+customer_charging_levels = ones(1,num_ev_customers);
 %customer_charging_levels = ones(1,num_ev_customers)*2;  
 
 
@@ -97,9 +97,10 @@ charging_set_counter = 1;
 %% Simulating Charging events for selected customers
 charging_mask = {};
 
-customer_info_split = strsplit(customer_ID, 'C');
-tf_ID = customer_info_split(1);
-CID = customer_info_split(2);
+
+init_data = {"PX",0,minutes(0),minutes(0)};
+scenario_details = cell2table(init_data,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
 
 %iterating through ev customers
 for x=1:num_ev_customers
@@ -118,7 +119,12 @@ for x=1:num_ev_customers
     [charging_mask,scenario_start_time,scenario_duration] = generate_charging_mask(charger_level);
     charging_mask_set{charging_set_counter} = charging_mask;   
     charging_set_counter = charging_set_counter + 1;
+
+
     customer_ID = ev_customer_IDs(x);
+    customer_info_split = strsplit(customer_ID, 'C');
+    tf_ID = customer_info_split(1);
+    CID = customer_info_split(2);
 
     %calculating number of datapoints needed to populate charging event
     num_timestamps = size(TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID},1);
@@ -127,27 +133,15 @@ for x=1:num_ev_customers
     %is a closed delta
 
     if sum(ismember(closed_delta_customers,tf_ID)) >=1
-        
-        modified_base_load = customer_base_loads_tt;
-
-        modified_base_load(charging_mask,tf_ID) = num2cell(modified_base_load{charging_mask,tf_ID} + TFPID_flat_profiles_timetable{charging_mask,tf_ID})
-
+       
         %Declaring red and blue suffixes for connected transformer
         tf_ID_R = append(tf_ID,"R");
         tf_ID_B = append(tf_ID,"B");
-        
-        fprintf("[!]Red Phase Loading = %d kW\n",charging_load*1/3);
-        fprintf("[!]White Phase Loading = %d kW\n",charging_load*2/3);
-        fprintf("[!]Black Phase Loading = %d kW\n",charging_load*1/3);
-
 
         fprintf("[!]CLOSED DELTA OCCURING AT: %s \n",customer_ID);
         %add 2/3 of the EV load to customer base load(on the system this is
         %the 2nd phase)
-    
-        disp("==================== WHITE PHASE BASE LOAD =============")    
-        customer_base_loads_tt{charging_mask,tf_ID}
-        disp("==================== WHITE PHASE MODIFIED LOAD =============")
+  
 
         %superimposing the charging event onto the flat profile using the
         %charging mask and closed delta weightings-- WHITE PHASE   
@@ -162,26 +156,17 @@ for x=1:num_ev_customers
         customer_R_ID = append(customer_R_ID,"C")
         customer_R_ID = append(customer_R_ID,CID)
 
-        disp("==================== RED PHASE BASE LOAD =============")    
-        customer_base_loads_tt{charging_mask,tf_ID_R}
-        disp("==================== RED PHASE MODIFIED LOAD =============")
-
         %superimposing the charging event onto the flat profile using the
         %charging mask and closed delta weightings-- RED PHASE
         TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_R_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
             charging_mask,customer_R_ID} + ones(num_timestamps,1)*(1/3)*charging_load;
        
         %Adding to red phase
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} +ones(num_timestamps,1)*(1/3)*charging_load
+        TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} +ones(num_timestamps,1)*(1/3)*charging_load;
 
         customer_B_ID = append(tf_ID,"B"); %ID for customer B-Phase ID
         customer_B_ID = append(customer_B_ID,"C")
         customer_B_ID = append(customer_B_ID,CID)
-
-        
-        disp("==================== BLACK PHASE BASE LOAD =============")  
-        customer_base_loads_tt{charging_mask,tf_ID_B}
-        disp("==================== BLACK PHASE MODIFIED LOAD =============")  
 
         %superimposing the charging event onto the flat profile using the
         %charging mask and closed delta weightings-- BLACK PHASE
@@ -193,22 +178,27 @@ for x=1:num_ev_customers
         %three phases
 
         %Adding to black phase
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} +ones(num_timestamps,1)*(1/3)*charging_load
+        TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} +ones(num_timestamps,1)*(1/3)*charging_load;
 
     else
-        disp("==================== WHITE PHASE BASE LOAD =============")    
-        customer_base_loads_tt{charging_mask,tf_ID}
-        modified_base_load = customer_base_loads_tt;
-        modified_base_load(charging_mask,tf_ID) = num2cell(modified_base_load{charging_mask,tf_ID} + TFPID_flat_profiles_timetable{charging_mask,tf_ID})
-        disp("==================== WHITE PHASE MODIFIED LOAD =============")
         TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
             charging_mask,customer_ID} + ones(num_timestamps,1)*charging_load;
 
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*charging_load
+        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*charging_load;
         
     end
+    
+    event_details = {customer_ID,charger_level,scenario_start_time,scenario_duration};
 
-   
+    if x == 1
+        scenario_details = cell2table(event_details,"VariableNames",["Customer ID","Charging Level", ...
+    "Start Time(Minutes from 00:00 AM)","Duration(Minutes)"]);
+    else
+        scenario_details = [scenario_details; event_details];
+    end
+
+
+
 end
 
 %% Aggregating customers loads onto their transformers
@@ -225,10 +215,20 @@ for x=1:num_ev_customers
     CID = customer_info_split(2);
 
     modified_base_load(:,tf_ID) = num2cell(modified_base_load{:,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
+
+    scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
+    scenario_details.Properties.VariableNames(3) = "Start Time(HH:MM)";
+    scenario_details.("Start Time(HH:MM)").Format = 'hh:mm';
+    scenario_details.Properties.VariableNames(4) = "Duration(HH:MM)";
+    scenario_details.("Duration(HH:MM)").Format = 'hh:mm';
+
 end
 
 %% Validating Results
 
+%CID = "P33";
+%charging_mask = charging_mask_set{5};
+%stackedplot(customer_base_loads_tt{:,CID},TF_CUSTOMER_flat_profiles_timetable{:, "P33C12"},"CombineMatchingNames",true)
 
 
 %Loop through ev IDs and build a new timetable showing base and modified
@@ -246,3 +246,9 @@ end
 %     addvars(show_case_timetable,base_load,mod_load)
 % end
 
+
+%%
+scenario_details
+modified_base_load.Time.Format = 'hh:mm';
+modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
+writetable(modified_base_load_T,'penlvl_5.csv')
