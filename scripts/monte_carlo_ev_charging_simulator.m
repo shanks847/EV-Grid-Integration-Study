@@ -24,8 +24,8 @@ opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
 
 % Import the data
 balanced_eba_hres_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
-%balanced_eba_hres_path_UWIWS ="C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv");
-balanced_eba_hres = readtable( balanced_eba_hres_path,opts);
+balanced_eba_hres_path_UWIWS ="C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+balanced_eba_hres = readtable(balanced_eba_hres_path_UWIWS,opts);
 
 customer_ids = opts.VariableNames;
 customer_ids = customer_ids(2:length(customer_ids));
@@ -39,8 +39,37 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 %% Setting parameters of EV Charging Study
 
+
+
+
+
+
+
+
+
+
+
+
 %setting penetration level
-penetration_level = 0.05;
+penetration_level = 0.05; %STEP 1. CHANGE PENETRATON LEVEL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %declaring number of customers on feeder
 num_feeder_customers = 2400;
@@ -49,16 +78,38 @@ num_feeder_customers = 2400;
 num_ev_customers = round(penetration_level*num_feeder_customers);
 numSamples = num_ev_customers;
 
+
+
+
+
+
+
+
+
+
+%STEP 2 - CHOOSE MIXTURE OF SCENARIO
+
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
-%customer_charging_levels = randi(2,1,num_ev_customers);
-%customer_charging_levels = ones(1,num_ev_customers);
-customer_charging_levels = ones(1,num_ev_customers)*2;  
+%customer_charging_levels = randi(2,1,num_ev_customers); %MIXUTRE
+%customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
+customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
 
 
-%tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
+
+
+
+
+
+
+
+
+
+
+
+tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
 tf_details_local_WS_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
 %creating transformer-customer pairC:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis IDs
-tf_details_path = tf_details_local_WS_path;
+tf_details_path = tf_details_UWIWS_path;
 %creating transformer-customer pair IDs
 
 viable_ev_customer_IDs = get_viable_ev_customers(tf_details_path);
@@ -274,10 +325,45 @@ end
 
 
 %%
+
+
+
+
+
+
+
 scenario_details
 modified_base_load.Time.Format = 'hh:mm';
 modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
-%writetable(modified_base_load_T,'penlvl_15.csv')
+writetable(modified_base_load_T,'CHARGING_LVL_PEN_LVL_05.csv') %STEP 3 CHANGE NAME OF FILE
+
+
+
+
+
+
 
 %% Writing scenario details
-writetable(scenario_details,'scn_lvl_6.csv')
+
+
+
+
+
+
+
+
+
+
+
+%step 
+writetable(scenario_details,'SCN_CHARGING_LVL_PEN_LVL_05.csv.csv') %STEP 4 CHANGE NAME OF SCN FILE
+
+
+
+
+
+
+
+
+
+
