@@ -3,7 +3,6 @@ clc
 %% Setting a seed to make results reproducible
 rng(1);
 
-
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -43,24 +42,8 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 
 
-
-
-
-
-
-
-
 %setting penetration level
-penetration_level = 0.05; %STEP 1. CHANGE PENETRATON LEVEL
-
-
-
-
-
-
-
-
-
+penetration_level = 0.20; %STEP 1. CHANGE PENETRATON LEVEL
 
 
 
@@ -90,9 +73,9 @@ numSamples = num_ev_customers;
 %STEP 2 - CHOOSE MIXTURE OF SCENARIO
 
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
-%customer_charging_levels = randi(2,1,num_ev_customers); %MIXUTRE
-%customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
-customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
+
+customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
+%customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
 
 
 
@@ -104,9 +87,7 @@ customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
 
 
 
-
-
-tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
+tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
 tf_details_local_WS_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
 %creating transformer-customer pairC:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis IDs
 tf_details_path = tf_details_UWIWS_path;
@@ -164,6 +145,7 @@ scenario_details = cell2table(init_data,"VariableNames",["Customer ID","Charging
 for x=1:num_ev_customers
     %assigning selected charging level to customer
     charger_level = customer_charging_levels(x);
+    %charger_level = randi(2,1); %MIXUTRE
 
     %declaring variable to represent charger power rating
     charging_load = 0;
@@ -175,6 +157,7 @@ for x=1:num_ev_customers
 
     %generating charging mask using the NREL based probability distrubution
     [charging_mask,scenario_start_time,scenario_duration] = generate_charging_mask(charger_level);
+    
     charging_mask_set{charging_set_counter} = charging_mask;   
     charging_set_counter = charging_set_counter + 1;
 
@@ -335,7 +318,7 @@ end
 scenario_details
 modified_base_load.Time.Format = 'hh:mm';
 modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
-writetable(modified_base_load_T,'CHARGING_LVL_PEN_LVL_05.csv') %STEP 3 CHANGE NAME OF FILE
+writetable(modified_base_load_T,'CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 3 CHANGE NAME OF FILE
 
 
 
@@ -354,9 +337,7 @@ writetable(modified_base_load_T,'CHARGING_LVL_PEN_LVL_05.csv') %STEP 3 CHANGE NA
 
 
 
-
-%step 
-writetable(scenario_details,'SCN_CHARGING_LVL_PEN_LVL_05.csv.csv') %STEP 4 CHANGE NAME OF SCN FILE
+writetable(scenario_details,'SCN_CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 4 CHANGE NAME OF SCN FILE
 
 
 
