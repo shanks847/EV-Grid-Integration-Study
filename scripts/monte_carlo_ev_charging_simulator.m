@@ -74,8 +74,8 @@ numSamples = num_ev_customers;
 
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
 
-customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
-%customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
+%customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
+customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
 
 
 
@@ -284,67 +284,14 @@ for x=1:num_ev_customers
 
 end
 
-%% Validating Results
-
-%CID = "P33";
-%charging_mask = charging_mask_set{5};
-%stackedplot(customer_base_loads_tt{:,CID},TF_CUSTOMER_flat_profiles_timetable{:, "P33C12"},"CombineMatchingNames",true)
-
-
-%Loop through ev IDs and build a new timetable showing base and modified
-%loads
-% for x=1:num_ev_customers
-%     customer_ID = ev_customer_IDs(x);
-%     customer_info_split = strsplit(customer_ID, 'C');
-%     show_case_timetable = timetable(minutes(0:5:1425)');
-% 
-%     tf_ID = customer_info_split(1);
-%     CID = customer_info_split(2);
-% 
-%     base_load = customer_base_loads_tt(:,tf_ID);
-%     mod_load = modified_base_load{:,tf_ID};
-%     addvars(show_case_timetable,base_load,mod_load)
-% end
-
 
 %%
-
-
-
-
-
-
-
 scenario_details
 modified_base_load.Time.Format = 'hh:mm';
 modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
 writetable(modified_base_load_T,'CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 3 CHANGE NAME OF FILE
-
-
-
-
-
-
-
 %% Writing scenario details
-
-
-
-
-
-
-
-
-
-
 writetable(scenario_details,'SCN_CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 4 CHANGE NAME OF SCN FILE
 
 
-
-
-
-
-
-
-
-
+%% Plotting Stacked Graphs showing Power Splitting

@@ -10,9 +10,6 @@ start_distribution = 0;
 duration_distribution = 0;
 
 
-
-
-
 % Import the file
 charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
 newData1 = load('-mat', charging_events_path);
@@ -25,10 +22,6 @@ end
 
 % Define your list of data
 data = newData1.l2_durs;
-
-
-
-
 
 
 if charger_level == 1
