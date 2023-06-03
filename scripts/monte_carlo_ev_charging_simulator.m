@@ -22,9 +22,10 @@ opts.EmptyLineRule = "read";
 opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
 
 % Import the data
-balanced_eba_hres_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
-balanced_eba_hres_path_UWIWS ="C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
-balanced_eba_hres = readtable(balanced_eba_hres_path_UWIWS,opts);
+%balanced_eba_hres_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+%balanced_eba_hres_path_UWIWS ="C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+STABLE_balanced_eba_hres_path = "C:\Users\Shankar Ramharack\Documents\EV-Grid-Integration-Study-STABLE\data\balanced loads\balanced_eba_hres.csv"
+balanced_eba_hres = readtable(STABLE_balanced_eba_hres_path,opts);
 
 customer_ids = opts.VariableNames;
 customer_ids = customer_ids(2:length(customer_ids));
@@ -38,21 +39,8 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 %% Setting parameters of EV Charging Study
 
-
-
-
-
 %setting penetration level
 penetration_level = 0.20; %STEP 1. CHANGE PENETRATON LEVEL
-
-
-
-
-
-
-
-
-
 
 %declaring number of customers on feeder
 num_feeder_customers = 2400;
@@ -62,40 +50,24 @@ num_ev_customers = round(penetration_level*num_feeder_customers);
 numSamples = num_ev_customers;
 
 
-
-
-
-
-
-
-
-
-%STEP 2 - CHOOSE MIXTURE OF SCENARIO
-
 %CONTROLS LEVEL CHOSEN FOR CHARGING SCENARIO
 
-%customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
-customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
+customer_charging_levels = ones(1,num_ev_customers); %ONLY LEVEL 1
+%customer_charging_levels = ones(1,num_ev_customers)*2;  %only LEVEL 2
 
 
 
+%tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
+%tf_details_local_WS_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
+%creating transformer-customer pair
+STABLE_tf_details_path = "C:\Users\Shankar Ramharack\Documents\EV-Grid-Integration-Study-STABLE\data\load_statistical_analysis\customers_from_disaggregation.xlsx"
+tf_details_path = STABLE_tf_details_path;
 
 
-
-
-
-
-
-
-tf_details_UWIWS_path  = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
-tf_details_local_WS_path = "C:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
-%creating transformer-customer pairC:\Users\shank\OneDrive\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis IDs
-tf_details_path = tf_details_UWIWS_path;
 %creating transformer-customer pair IDs
+viable_ev_customer_IDs = get_viable_ev_customers(STABLE_tf_details_path);
 
-viable_ev_customer_IDs = get_viable_ev_customers(tf_details_path);
-
-% Generate random indices
+% Generate random indices, randperm(n) eturns a row vector containing a random permutation of the integers from 1 to n without repeating elements.
 randomIndices = randperm(numel(viable_ev_customer_IDs), numSamples);
 
 % Sample from the string array using the random indices
@@ -187,7 +159,7 @@ for x=1:num_ev_customers
         tf_ID_R = append(tf_ID,"R");
         tf_ID_B = append(tf_ID,"B");
 
-        %fprintf("[!]CLOSED DELTA OCCURING AT: %s \n",customer_ID);
+        fprintf("[!]CLOSED DELTA OCCURING AT: %s \n",customer_ID);
         %add 2/3 of the EV load to customer base load(on the system this is
         %the 2nd phase)
   
@@ -284,14 +256,28 @@ for x=1:num_ev_customers
 
 end
 
+%% Validating Results
+
+%CID = "P33";
+%charging_mask = charging_mask_set{5};
+%stackedplot(customer_base_loads_tt{:,CID},TF_CUSTOMER_flat_profiles_timetable{:, "P33C12"},"CombineMatchingNames",true)
+
+
+%Loop through ev IDs and build a new timetable showing base and modified
+%loads
+% for x=1:num_ev_customers
+%     customer_ID = ev_customer_IDs(x);
+%     customer_info_split = strsplit(customer_ID, 'C');
+%     show_case_timetable = timetable(minutes(0:5:1425)');
+% 
+%     tf_ID = customer_info_split(1);
+%     CID = customer_info_split(2);
+% 
+%     base_load = customer_base_loads_tt(:,tf_ID);
+%     mod_load = modified_base_load{:,tf_ID};
+%     addvars(show_case_timetable,base_load,mod_load)
+% end
+
 
 %%
-scenario_details
-modified_base_load.Time.Format = 'hh:mm';
-modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
-writetable(modified_base_load_T,'CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 3 CHANGE NAME OF FILE
-%% Writing scenario details
-writetable(scenario_details,'SCN_CHARGING_LVL_1_PEN_LVL_20.csv') %STEP 4 CHANGE NAME OF SCN FILE
 
-
-%% Plotting Stacked Graphs showing Power Splitting
