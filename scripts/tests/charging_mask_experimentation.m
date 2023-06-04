@@ -1,0 +1,2 @@
+charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
+generate_charging_mask(1,charging_events_path)

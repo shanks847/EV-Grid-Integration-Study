@@ -77,10 +77,11 @@ TF_CUSTOMER_flat_profiles = array2timetable( ...
 clear all
 clc
 
-tf_list_path = "C:\Users\Shankar Ramharack\Documents\EV-Grid-Integration-Study-STABLE\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
-charging_events_path = "C:\Users\Shankar Ramharack\Documents\EV-Grid-Integration-Study-STABLE\data\misc\charging_events.mat";
+tf_list_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
+charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
+balanced_eba_hres_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
 
-%% Setting a seed to make results reproducible
+
 rng(1);
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -99,8 +100,8 @@ opts.EmptyLineRule = "read";
 % Specify variable properties
 opts = setvaropts(opts, "Time", "InputFormat", "yyyy-MM-dd HH:mm:ss");
 
-STABLE_balanced_eba_hres_path = "C:\Users\Shankar Ramharack\Documents\EV-Grid-Integration-Study-STABLE\data\balanced loads\balanced_eba_hres.csv"
-balanced_eba_hres = readtable(STABLE_balanced_eba_hres_path,opts);
+
+balanced_eba_hres = readtable(balanced_eba_hres_path,opts);
 
 customer_ids = opts.VariableNames;
 customer_ids = customer_ids(2:length(customer_ids));
@@ -116,8 +117,6 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 
 
-
-
 % ---------------------------------- SCENARIO PARAMETERS -------------------
 
 
@@ -127,6 +126,7 @@ chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
 closed_delta_customers = ["P33","P53","P115","P182","P198","P202","P207"];
 
 %----------------------------------------------------------------------------------
+
 %calculating number of EV customers on feeder based on penetration
 num_ev_customers = round(penetration_level*num_feeder_customers);
 
@@ -171,6 +171,7 @@ switch(chargers_being_used)
         customer_charging_levels = randi(2,1,num_ev_customers);
 end
 
+%%
 collection_period = 0:5:1425;
 charging_mask_set = cell(num_ev_customers,1);
 
@@ -302,7 +303,7 @@ tf_ID_B = append(tf_ID,"B");
 %add power to a temporary variable and assign it as the mod val
 
 test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
-test_subject_modified_load(:,tf_ID) = num2cell(test_subject_base_load{ ...
+test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
     :,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
 
 %plot base load in a light blue
