@@ -5,8 +5,10 @@ clc
 tf_list_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\load_statistical_analysis\customers_from_disaggregation.xlsx";
 charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
 balanced_eba_hres_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+data_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\lookup_tables.mat";
 
 rng(1);
+
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -45,7 +47,7 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 
 num_feeder_customers = 2400;
-penetration_level = 0.05;
+penetration_level = 0.20;
 chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
 
 
@@ -96,7 +98,7 @@ switch(chargers_being_used)
     case "2"
         customer_charging_levels = ones(1,num_ev_customers)*2;
     case "MIX"
-        customer_charging_levels = randi(2,1,num_ev_customers);
+        customer_charging_levels = load(data_path,"mixed_idxs").mixed_idxs;
 end
 
 %% Generate flat profiles for both transformer variables, and transformer-customer pairings.
@@ -126,7 +128,7 @@ for x=1:num_ev_customers
     end
 
     %generating charging mask using the NREL based probability distrubution
-    [charging_mask,scenario_start_time,scenario_duration] = generate_charging_mask(charger_level,charging_events_path);
+    [charging_mask,scenario_start_time,scenario_duration] = generate_charging_mask_lut_approach(chargers_being_used,data_path,x);
     
     %adding the charging event time details to the mask list
     charging_mask_set(x) = {charging_mask};   %possible bug
@@ -235,206 +237,201 @@ for x=1:num_ev_customers
 
     end
 
-    scenario_details.("Customer ID") = string(scenario_details.("Customer ID"));
-    scenario_details.Properties.VariableNames(3) = "Start Time(HH:MM)";
-    scenario_details.("Start Time(HH:MM)").Format = 'hh:mm';
-    scenario_details.Properties.VariableNames(4) = "Duration(HH:MM)";
-    scenario_details.("Duration(HH:MM)").Format = 'hh:mm';
-
 end
 
 
 scenario_details
-%% Validating at the customer level -- REG. CONFIG
-%Adding load for one of the selected customers who is not a closed delta
-test_subject = ev_customer_IDs(1);
-customer_base_loads_tt.Time.Format = 'hh:mm';
+% %% Validating at the customer level -- REG. CONFIG
+% %Adding load for one of the selected customers who is not a closed delta
+% test_subject = ev_customer_IDs(1);
+% customer_base_loads_tt.Time.Format = 'hh:mm';
+% 
+% customer_info_split = strsplit(test_subject, 'C');
+% tf_ID = customer_info_split(1);
+% 
+% %add power to a temporary variable and assign it as the mod val
+% test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
+% test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
+%     :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,customer_ID});
+% 
+% %plot base load in a light blue
+% plot(customer_base_loads_tt(:,tf_ID),'Time',tf_ID,'Color',"#80B3FF")
+% hAx=gca;
+% set(hAx,'YGrid','on','XGrid','on')
+% %set(hAx,'xminorgrid','on','yminorgrid','on')
+% hold on
+% 
+% % %plot modified load in red
+% plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
+% hold off
+% 
+% %% Validating at the customer level -- CLOSED DELTA
+% 
+% %test_subject = closed_delta_test_subject;
+% test_subject =  "P115C6" ;
+% customer_info_split = strsplit(test_subject, 'C');
+% tf_ID = customer_info_split(1);
+% CID = customer_info_split(2);
+% 
+% tf_ID_R = append(tf_ID,"R");
+% tf_ID_B = append(tf_ID,"B");
+% 
+% customer_B_ID = append(tf_ID_B,"C");
+% customer_B_ID = append(customer_B_ID,CID);
+% 
+% customer_R_ID = append(tf_ID_R,"C");
+% customer_R_ID = append(customer_R_ID,CID);
+% 
+% red_base = customer_base_loads_tt(:,tf_ID_R);
+% white_base = customer_base_loads_tt(:,tf_ID);
+% black_base = customer_base_loads_tt(:,tf_ID_B);
+% 
+% 
+% red_mod = red_base;
+% white_mod = white_base;
+% black_mod = black_base;
+% 
+% red_mod(:,tf_ID_R) = num2cell(red_base{ ...
+%     :,tf_ID_R} + TF_CUSTOMER_flat_profiles_timetable{:,customer_R_ID});
+% 
+% white_mod(:,tf_ID) = num2cell(white_base{ ...
+%     :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,test_subject});
+% 
+% 
+% black_mod(:,tf_ID_B) = num2cell(black_base{ ...
+%     :,tf_ID_B} + TF_CUSTOMER_flat_profiles_timetable{:,customer_B_ID});
+% 
+% % Create the figure and subplots
+% figure;
+% subplot(3, 1, 1);
+% hold on;
+% % Plot red_base and red_mod in the first subplot
+% plot(red_base,'Time', tf_ID_R, 'color', "#FF0303", 'DisplayName', 'red\_base');
+% plot(red_mod,'Time', tf_ID_R, 'color', "#227C70", 'DisplayName', 'red\_mod','LineStyle','--');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% grid on
+% 
+% subplot(3, 1, 2);
+% hold on;
+% % Plot white_base and white_mod in the second subplot
+% plot(white_base,'Time', tf_ID, 'color', "#27E1C1", 'DisplayName', 'white\_base');
+% plot(white_mod,'Time', tf_ID, 'color', "#227C70", 'DisplayName', 'white\_mod','LineStyle','--');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% grid on
+% 
+% subplot(3, 1, 3);
+% hold on;
+% % Plot black_base and black_mod in the third subplot
+% plot(black_base,'Time', tf_ID_B, 'color', "#E7AB9A", 'DisplayName', 'black\_base');
+% plot(black_mod,'Time', tf_ID_B, 'color', "#227C70", 'DisplayName', 'black\_mod','LineStyle','--');
+% xlabel('Time');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% 
+% grid on
+% % Adjust spacing between subplots
+% sgtitle('Closed Delta Load Sharing during Charging Event');
+% 
+% hold off
+% %% Validating at the TF level -- REG CONFIG
+% %Adding load for one of the selected customers who is not a closed delta
+% %test_subject = ev_customer_IDs(1);
+% test_subject = "P156C1";
+% customer_base_loads_tt.Time.Format = 'hh:mm';
+% 
+% customer_info_split = strsplit(test_subject, 'C');
+% tf_ID = customer_info_split(1);
+% CID = customer_info_split(2);
+% 
+% 
+% %add power to a temporary variable and assign it as the mod val
+% 
+% test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
+% test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
+%     :,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
+% 
+% %plot base load in a light blue
+% plot(customer_base_loads_tt(:,tf_ID),'Time',tf_ID,'Color',"#80B3FF")
+% hAx=gca;
+% set(hAx,'YGrid','on','XGrid','on')
+% %set(hAx,'xminorgrid','on','yminorgrid','on')
+% hold on
+% 
+% plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
+% hold off
+% %% Validating at the TF level -- CLOSED DELTA
+% test_subject = closed_delta_test_subject;
+% customer_info_split = strsplit(test_subject, 'C');
+% tf_ID = customer_info_split(1);
+% CID = customer_info_split(2);
+% tf_ID_R = append(tf_ID,"R");
+% tf_ID_B = append(tf_ID,"B");
+% 
+% 
+% red_base = customer_base_loads_tt(:,tf_ID_R);
+% white_base = customer_base_loads_tt(:,tf_ID);
+% black_base = customer_base_loads_tt(:,tf_ID_B);
+% 
+% 
+% red_mod = red_base;
+% white_mod = white_base;
+% black_mod = black_base;
+% 
+% red_mod(:,tf_ID_R) = num2cell(red_base{ ...
+%     :,tf_ID_R} + TFPID_flat_profiles_timetable{:,tf_ID_R});
+% 
+% white_mod(:,tf_ID) = num2cell(white_base{ ...
+%     :,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
+% 
+% 
+% black_mod(:,tf_ID_B) = num2cell(black_base{ ...
+%     :,tf_ID_B} + TFPID_flat_profiles_timetable{:,tf_ID_B});
+% 
+% % Create the figure and subplots
+% figure;
+% subplot(3, 1, 1);
+% hold on;
+% % Plot red_base and red_mod in the first subplot
+% plot(red_base,'Time', tf_ID_R, 'color', "#FF0303", 'DisplayName', 'red\_base');
+% plot(red_mod,'Time', tf_ID_R, 'color', "#227C70", 'DisplayName', 'red\_mod','LineStyle','--');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% grid on
+% 
+% subplot(3, 1, 2);
+% hold on;
+% % Plot white_base and white_mod in the second subplot
+% plot(white_base,'Time', tf_ID, 'color', "#27E1C1", 'DisplayName', 'white\_base');
+% plot(white_mod,'Time', tf_ID, 'color', "#227C70", 'DisplayName', 'white\_mod','LineStyle','--');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% grid on
+% 
+% subplot(3, 1, 3);
+% hold on;
+% % Plot black_base and black_mod in the third subplot
+% plot(black_base,'Time', tf_ID_B, 'color', "#E7AB9A", 'DisplayName', 'black\_base');
+% plot(black_mod,'Time', tf_ID_B, 'color', "#227C70", 'DisplayName', 'black\_mod','LineStyle','--');
+% xlabel('Time');
+% % Create ylabel
+% ylabel('Power/kW');
+% legend('Location', 'best');
+% set(gca,'FontSize',18)
+% 
+% grid on
+% % Adjust spacing between subplots
+% sgtitle('Closed Delta Load Sharing during Charging Event');
+% hold off
 
-customer_info_split = strsplit(test_subject, 'C');
-tf_ID = customer_info_split(1);
-
-%add power to a temporary variable and assign it as the mod val
-test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
-test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
-    :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,customer_ID});
-
-%plot base load in a light blue
-plot(customer_base_loads_tt(:,tf_ID),'Time',tf_ID,'Color',"#80B3FF")
-hAx=gca;
-set(hAx,'YGrid','on','XGrid','on')
-%set(hAx,'xminorgrid','on','yminorgrid','on')
-hold on
-
-% %plot modified load in red
-plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
-hold off
-
-%% Validating at the customer level -- CLOSED DELTA
-
-%test_subject = closed_delta_test_subject;
-test_subject =  "P115C6" ;
-customer_info_split = strsplit(test_subject, 'C');
-tf_ID = customer_info_split(1);
-CID = customer_info_split(2);
-
-tf_ID_R = append(tf_ID,"R");
-tf_ID_B = append(tf_ID,"B");
-
-customer_B_ID = append(tf_ID_B,"C");
-customer_B_ID = append(customer_B_ID,CID);
-
-customer_R_ID = append(tf_ID_R,"C");
-customer_R_ID = append(customer_R_ID,CID);
-
-red_base = customer_base_loads_tt(:,tf_ID_R);
-white_base = customer_base_loads_tt(:,tf_ID);
-black_base = customer_base_loads_tt(:,tf_ID_B);
-
-
-red_mod = red_base;
-white_mod = white_base;
-black_mod = black_base;
-
-red_mod(:,tf_ID_R) = num2cell(red_base{ ...
-    :,tf_ID_R} + TF_CUSTOMER_flat_profiles_timetable{:,customer_R_ID});
-
-white_mod(:,tf_ID) = num2cell(white_base{ ...
-    :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,test_subject});
-
-
-black_mod(:,tf_ID_B) = num2cell(black_base{ ...
-    :,tf_ID_B} + TF_CUSTOMER_flat_profiles_timetable{:,customer_B_ID});
-
-% Create the figure and subplots
-figure;
-subplot(3, 1, 1);
-hold on;
-% Plot red_base and red_mod in the first subplot
-plot(red_base,'Time', tf_ID_R, 'color', "#FF0303", 'DisplayName', 'red\_base');
-plot(red_mod,'Time', tf_ID_R, 'color', "#227C70", 'DisplayName', 'red\_mod','LineStyle','--');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-grid on
-
-subplot(3, 1, 2);
-hold on;
-% Plot white_base and white_mod in the second subplot
-plot(white_base,'Time', tf_ID, 'color', "#27E1C1", 'DisplayName', 'white\_base');
-plot(white_mod,'Time', tf_ID, 'color', "#227C70", 'DisplayName', 'white\_mod','LineStyle','--');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-grid on
-
-subplot(3, 1, 3);
-hold on;
-% Plot black_base and black_mod in the third subplot
-plot(black_base,'Time', tf_ID_B, 'color', "#E7AB9A", 'DisplayName', 'black\_base');
-plot(black_mod,'Time', tf_ID_B, 'color', "#227C70", 'DisplayName', 'black\_mod','LineStyle','--');
-xlabel('Time');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-
-grid on
-% Adjust spacing between subplots
-sgtitle('Closed Delta Load Sharing during Charging Event');
-
-hold off
-%% Validating at the TF level -- REG CONFIG
-%Adding load for one of the selected customers who is not a closed delta
-%test_subject = ev_customer_IDs(1);
-test_subject = "P156C1";
-customer_base_loads_tt.Time.Format = 'hh:mm';
-
-customer_info_split = strsplit(test_subject, 'C');
-tf_ID = customer_info_split(1);
-CID = customer_info_split(2);
-
-
-%add power to a temporary variable and assign it as the mod val
-
-test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
-test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
-    :,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
-
-%plot base load in a light blue
-plot(customer_base_loads_tt(:,tf_ID),'Time',tf_ID,'Color',"#80B3FF")
-hAx=gca;
-set(hAx,'YGrid','on','XGrid','on')
-%set(hAx,'xminorgrid','on','yminorgrid','on')
-hold on
-
-plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
-hold off
-%% Validating at the TF level -- CLOSED DELTA
-test_subject = closed_delta_test_subject;
-customer_info_split = strsplit(test_subject, 'C');
-tf_ID = customer_info_split(1);
-CID = customer_info_split(2);
-tf_ID_R = append(tf_ID,"R");
-tf_ID_B = append(tf_ID,"B");
-
-
-red_base = customer_base_loads_tt(:,tf_ID_R);
-white_base = customer_base_loads_tt(:,tf_ID);
-black_base = customer_base_loads_tt(:,tf_ID_B);
-
-
-red_mod = red_base;
-white_mod = white_base;
-black_mod = black_base;
-
-red_mod(:,tf_ID_R) = num2cell(red_base{ ...
-    :,tf_ID_R} + TFPID_flat_profiles_timetable{:,tf_ID_R});
-
-white_mod(:,tf_ID) = num2cell(white_base{ ...
-    :,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
-
-
-black_mod(:,tf_ID_B) = num2cell(black_base{ ...
-    :,tf_ID_B} + TFPID_flat_profiles_timetable{:,tf_ID_B});
-
-% Create the figure and subplots
-figure;
-subplot(3, 1, 1);
-hold on;
-% Plot red_base and red_mod in the first subplot
-plot(red_base,'Time', tf_ID_R, 'color', "#FF0303", 'DisplayName', 'red\_base');
-plot(red_mod,'Time', tf_ID_R, 'color', "#227C70", 'DisplayName', 'red\_mod','LineStyle','--');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-grid on
-
-subplot(3, 1, 2);
-hold on;
-% Plot white_base and white_mod in the second subplot
-plot(white_base,'Time', tf_ID, 'color', "#27E1C1", 'DisplayName', 'white\_base');
-plot(white_mod,'Time', tf_ID, 'color', "#227C70", 'DisplayName', 'white\_mod','LineStyle','--');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-grid on
-
-subplot(3, 1, 3);
-hold on;
-% Plot black_base and black_mod in the third subplot
-plot(black_base,'Time', tf_ID_B, 'color', "#E7AB9A", 'DisplayName', 'black\_base');
-plot(black_mod,'Time', tf_ID_B, 'color', "#227C70", 'DisplayName', 'black\_mod','LineStyle','--');
-xlabel('Time');
-% Create ylabel
-ylabel('Power/kW');
-legend('Location', 'best');
-set(gca,'FontSize',18)
-
-grid on
-% Adjust spacing between subplots
-sgtitle('Closed Delta Load Sharing during Charging Event');
-hold off
