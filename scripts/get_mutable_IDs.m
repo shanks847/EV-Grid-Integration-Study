@@ -14,7 +14,7 @@ mutable_IDs = {};
 
 
 % Iterate over the rows and check the Loading column
-for i = 1:size(data, 1)
+for i = 1:215
     loadingValue = data{i, loadingColIndex};
     
     % Check if the Loading value is nonzero

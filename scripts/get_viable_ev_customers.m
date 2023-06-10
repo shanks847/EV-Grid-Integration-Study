@@ -22,7 +22,7 @@ tf_descs = readtable(tf_details_filepath, opts, "UseExcel", false);
 clear opts
 
 %iterate through transformer detail
-for x=1:216
+for x=1:215
     %grab transformer power variable ID, this is the parent TF ID
     tf_P_ID = tf_descs{x,"TFPowerID"};
 
