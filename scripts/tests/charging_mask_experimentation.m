@@ -1,72 +1,67 @@
-clear all
+%based on charger level, load approp lookup tables
 clc
 
-charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
-pen20_data = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\pen20data.mat";
+chargers_being_used = "1";
 data_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\lookup_tables.mat";
+lut_path = data_path;
+%idx=18; %no overflow
+idx=10; %overflow present
 
-newData1 = load('-mat', pen20_data);
+if chargers_being_used == "1"
+    start_times = load(lut_path,"start_timestamps_level_1");
+    durations = load(lut_path, "duration_timestamps_level_1");
 
-% Create new variables in the base workspace from those fields.
-vars = fieldnames(newData1);
-for i = 1:length(vars)
-    assignin('base', vars{i}, newData1.(vars{i}));
+    start_times = start_times.start_timestamps_level_1;
+    durations = durations.duration_timestamps_level_1;
+elseif chargers_being_used == "2"
+    
+    start_times = load(lut_path,"start_timestamps_level_2");
+    durations = load(lut_path, "duration_timestamps_level_2");
+
+    start_times = start_times.start_timestamps_level_2;
+    durations = durations.duration_timestamps_level_2;
+
+else
+    start_times = load(lut_path,"start_timestamps_level_mix");
+    durations = load(lut_path, "duration_timestamps_mix");
+
+    start_times = start_times.start_timestamps_level_mix;
+    durations = durations.duration_timestamps_mix;
 end
 
-
-%% Creating a list of start times and durations for each level
-max_pen_lvl = 0.2;
-max_customers = 2400;
-num_of_customers = max_customers * max_pen_lvl;
-mixed_idxs =  newData1.scenario_details.("Charging Level");
-
-%Arrays to hold timestamps at start of charging
-start_timestamps_level_1 = [];
-start_timestamps_level_2 = [];
-start_timestamps_level_mix = [];
-
-%Arrays to hold duration of charging
-duration_timestamps_level_1 = [];
-duration_timestamps_level_2 = [];
-duration_timestamps_mix = [];
+% start_times
+scenario_start_time = start_times(idx);
+scenario_duration = durations(idx);
 
 
+%generate scn event details based on index and charger level
+%scenario_end_time = scenario_start_time + scenario_duration;
+%charging_mask = timerange(scenario_start_time,scenario_end_time,'closed'); %make a charging scenario, rounding minutes to multiples of 5 to improve stability
 
 
-%% Populating start and duration time collections
-
-%poulatuing start time and duration lists for each level but discard the mask
-%since it can't be stored
-[tmp_cmask,tmp_st,tmp_dur] = generate_charging_mask(1,charging_events_path);
-for x=1:num_of_customers
-    [tmp_l1_cmask,tmp_l1_st,tmp_l1_dur] = generate_charging_mask(1, ...
-        charging_events_path);
-    [tmp_l2_cmask,tmp_l2_st,tmp_l2_dur] = generate_charging_mask(2, ...
-        charging_events_path);
-    [tmp_mix_cmask,tmp_mix_st,tmp_mix_dur] = generate_charging_mask(mixed_idxs(x),charging_events_path);
+%scenario_start_time = minutes(scenario_start_time);
+%scenario_duration = minutes(scenario_duration);
 
 
-    start_timestamps_level_1 = [start_timestamps_level_1, tmp_l1_st];
-    start_timestamps_level_2 = [start_timestamps_level_2, tmp_l2_st];
-    start_timestamps_level_mix = [start_timestamps_level_mix, tmp_mix_st];
+scenario_start_time.Format = 'hh:mm';
+scenario_duration.Format = 'hh:mm';
 
 
-    duration_timestamps_level_1 = [duration_timestamps_level_1, tmp_l1_dur];
-    duration_timestamps_level_2 = [duration_timestamps_level_2, tmp_l2_dur];
-    duration_timestamps_mix = [duration_timestamps_mix, tmp_mix_dur];
+%splitting overflow to the front of the profile
+end_of_day = minutes(1440);
+start_of_day = minutes(0);
+end_of_day.Format = 'hh:mm';
+start_of_day.Format = 'hh:mm';
+
+time_left = end_of_day - scenario_start_time;
+
+if time_left < scenario_duration
+    pre_overflow_mask = timerange(scenario_start_time,end_of_day,'closed')
+    overflow = start_of_day + (scenario_duration - time_left);
+    post_overflow_mask = timerange(start_of_day,overflow,'closed')
+
+else
+    scenario_end_time = scenario_start_time + scenario_duration
+    pre_overflow_mask = timerange(scenario_start_time,scenario_end_time,'closed')
 end
 
-
-% start_times = table(start_timestamps_level_1',start_timestamps_level_2', ...
-%     start_timestamps_level_mix','VariableNames',["Level 1 Start Times", ...
-%     "Level 2 Start Times", "Mixed Start Times"]);
-% 
-% durations = table(duration_timestamps_level_1',duration_timestamps_level_2', ...
-%     duration_timestamps_mix','VariableNames',["Level 1 Durations", ...
-%     "Level 2 Durations","Mixed Durations"]);
-
-
-save(data_path,'-mat')
-
-%% Create basecode for a function that can use LUT for generating charging event
-% INPUTS - charging_level, index_of_customer, pen_level
