@@ -5,7 +5,7 @@ chargers_being_used = "1";
 data_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\lookup_tables.mat";
 lut_path = data_path;
 %idx=18; %no overflow
-idx=10; %overflow present
+idx=19; %overflow present
 
 if chargers_being_used == "1"
     start_times = load(lut_path,"start_timestamps_level_1");
@@ -56,12 +56,13 @@ start_of_day.Format = 'hh:mm';
 time_left = end_of_day - scenario_start_time;
 
 if time_left < scenario_duration
-    pre_overflow_mask = timerange(scenario_start_time,end_of_day,'closed')
+    pre_overflow_mask = timerange(scenario_start_time,end_of_day,'closed');
     overflow = start_of_day + (scenario_duration - time_left);
-    post_overflow_mask = timerange(start_of_day,overflow,'closed')
+    post_overflow_mask = timerange(start_of_day,overflow,'closed');
 
 else
-    scenario_end_time = scenario_start_time + scenario_duration
-    pre_overflow_mask = timerange(scenario_start_time,scenario_end_time,'closed')
+    scenario_end_time = scenario_start_time + scenario_duration;
+    pre_overflow_mask = timerange(scenario_start_time,scenario_end_time,'closed');
+    post_overflow_mask = timerange(minutes(0),minutes(0));
 end
 

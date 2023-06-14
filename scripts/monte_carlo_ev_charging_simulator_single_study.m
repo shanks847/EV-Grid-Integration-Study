@@ -48,7 +48,7 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 num_feeder_customers = 2400;
 penetration_level = 0.20;
-chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
+chargers_being_used = "1"; % Takes on either:"1", "2" OR "MIX"
 
 
 %----------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ end
 %% Generate flat profiles for both transformer variables, and transformer-customer pairings.
 
 
-charging_mask_set = cell(num_ev_customers,1);
+%charging_mask_set = cell(num_ev_customers,1);
 
 %This approach is needed since preallocation results in ou
 scenario_details = 0;
@@ -128,10 +128,10 @@ for x=1:num_ev_customers
     end
 
     %generating charging mask using the NREL based probability distrubution
-    [charging_mask,scenario_start_time,scenario_duration] = generate_charging_mask_lut_approach(chargers_being_used,data_path,x);
+    [pre_overflow_mask,post_overflow_mask,scenario_start_time,scenario_duration] = generate_charging_mask_lut_approach(chargers_being_used,data_path,x);
     
     %adding the charging event time details to the mask list
-    charging_mask_set(x) = {charging_mask};   %possible bug
+    %charging_mask_set(x) = {charging_mask};   %possible bug
 
     event_details = {customer_ID,charger_level,scenario_start_time,scenario_duration};
     if x == 1
@@ -142,7 +142,9 @@ for x=1:num_ev_customers
     end
 
     %calculating number of datapoints needed to populate charging event
-    num_timestamps = size(TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID},1);
+    num_timestamps_pre_overflow = size(TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_ID},1);
+    num_timestamps_post_overflow = size(TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_ID},1);
+
 
     %splitting the modified customer ID to check if connected transformer
     %is a closed delta
@@ -162,11 +164,16 @@ for x=1:num_ev_customers
         
         %add 2/3 of the EV load to customer base load(on the system this is
         %the 2nd phase) -- ADDING AT CUSTOMER LEVEL
-        TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
-            charging_mask,customer_ID} + ones(num_timestamps,1)*(2/3)*charging_load;
+        TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            pre_overflow_mask,customer_ID} + ones(num_timestamps_pre_overflow,1)*(2/3)*charging_load;
+
+        TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            post_overflow_mask,customer_ID} + ones(num_timestamps_post_overflow,1)*(2/3)*charging_load;
 
         %Adding to white phase -- ADDING AT TF LEVEL
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*(2/3)*charging_load;
+        TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID} = TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID} +ones(num_timestamps_pre_overflow,1)*(2/3)*charging_load;
+
+        TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID} = TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID} +ones(num_timestamps_post_overflow,1)*(2/3)*charging_load;
 
 
 % ------------------------ RED PHASE --------------------------------------
@@ -177,11 +184,16 @@ for x=1:num_ev_customers
 
         %superimposing the charging event onto the flat profile using the
         %charging mask and closed delta weightings -- ADDING AT CUSTOMER LEVEL
-        TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_R_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
-            charging_mask,customer_R_ID} + ones(num_timestamps,1)*(1/3)*charging_load;
+        TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_R_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            pre_overflow_mask,customer_R_ID} + ones(num_timestamps_pre_overflow,1)*(1/3)*charging_load;
+
+        TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_R_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            post_overflow_mask,customer_R_ID} + ones(num_timestamps_post_overflow,1)*(1/3)*charging_load;
        
         %Adding to red phase
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_R} +ones(num_timestamps,1)*(1/3)*charging_load;
+        TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID_R} = TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID_R} +ones(num_timestamps_pre_overflow,1)*(1/3)*charging_load;
+        TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID_R} = TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID_R} +ones(num_timestamps_post_overflow,1)*(1/3)*charging_load;
+
 %----------------------- BLACK PHASE ------------------------------------
 
         customer_B_ID = append(tf_ID_B,"C");
@@ -189,19 +201,26 @@ for x=1:num_ev_customers
 
         %superimposing the charging event onto the flat profile using the
         %charging mask and closed delta weightings-- BLACK PHASE
-        TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_B_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
-            charging_mask,customer_B_ID} + ones(num_timestamps,1)*(1/3)*charging_load;
+        TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_B_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            pre_overflow_mask,customer_B_ID} + ones(num_timestamps_pre_overflow,1)*(1/3)*charging_load;
 
+        TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_B_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            post_overflow_mask,customer_B_ID} + ones(num_timestamps_post_overflow,1)*(1/3)*charging_load;
 
         %Adding to black phase
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} = TFPID_flat_profiles_timetable{charging_mask,tf_ID_B} +ones(num_timestamps,1)*(1/3)*charging_load;
+        TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID_B} = TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID_B} +ones(num_timestamps_pre_overflow,1)*(1/3)*charging_load;
+        TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID_B} = TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID_B} +ones(num_timestamps_post_overflow,1)*(1/3)*charging_load;
         
 
     else
-        TF_CUSTOMER_flat_profiles_timetable{charging_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
-            charging_mask,customer_ID} + ones(num_timestamps,1)*charging_load;
+        TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            pre_overflow_mask,customer_ID} + ones(num_timestamps_pre_overflow,1)*charging_load;
 
-        TFPID_flat_profiles_timetable{charging_mask,tf_ID} = TFPID_flat_profiles_timetable{charging_mask,tf_ID} +ones(num_timestamps,1)*charging_load;
+        TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
+            post_overflow_mask,customer_ID} + ones(num_timestamps_post_overflow,1)*charging_load;
+
+        TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID} = TFPID_flat_profiles_timetable{pre_overflow_mask,tf_ID} +ones(num_timestamps_pre_overflow,1)*charging_load;
+        TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID} = TFPID_flat_profiles_timetable{post_overflow_mask,tf_ID} +ones(num_timestamps_post_overflow,1)*charging_load;
         
     end
 
@@ -241,9 +260,28 @@ end
 
 
 scenario_details
-% %% Validating at the customer level -- REG. CONFIG
-% %Adding load for one of the selected customers who is not a closed delta
-% test_subject = ev_customer_IDs(1);
+
+modified_base_load.Time.Format = 'hh:mm';
+modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
+
+tmp_emtp_data_pen_lvl = append('CHARGING_LVL_',chargers_being_used);
+tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
+tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
+fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
+writetable(modified_base_load_T,fname_emtp);
+
+
+%% Writing scenario details
+
+tmp_sd_pen_lvl = append('SCN_CHARGING_LVL_',chargers_being_used)
+tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,'_PEN_LVL_');
+tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,num2str(penetration_level));
+fname_sd = append(tmp_sd_pen_lvl,'.csv');
+writetable(scenario_details,fname_sd); %STEP 4 CHANGE NAME OF SCN FILE
+
+%% Validating at the customer level -- REG. CONFIG
+%Adding load for one of the selected customers who is not a closed delta
+% test_subject = ev_customer_IDs(360);
 % customer_base_loads_tt.Time.Format = 'hh:mm';
 % 
 % customer_info_split = strsplit(test_subject, 'C');
@@ -252,7 +290,7 @@ scenario_details
 % %add power to a temporary variable and assign it as the mod val
 % test_subject_modified_load = customer_base_loads_tt(:,tf_ID);
 % test_subject_modified_load(:,tf_ID) = num2cell(test_subject_modified_load{ ...
-%     :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,customer_ID});
+%     :,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,test_subject});
 % 
 % %plot base load in a light blue
 % plot(customer_base_loads_tt(:,tf_ID),'Time',tf_ID,'Color',"#80B3FF")
@@ -264,7 +302,10 @@ scenario_details
 % % %plot modified load in red
 % plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
 % hold off
-% 
+
+
+
+
 % %% Validating at the customer level -- CLOSED DELTA
 % 
 % %test_subject = closed_delta_test_subject;
@@ -341,10 +382,15 @@ scenario_details
 % sgtitle('Closed Delta Load Sharing during Charging Event');
 % 
 % hold off
-% %% Validating at the TF level -- REG CONFIG
-% %Adding load for one of the selected customers who is not a closed delta
-% %test_subject = ev_customer_IDs(1);
-% test_subject = "P156C1";
+
+
+
+
+
+%% Validating at the TF level -- REG CONFIG
+%Adding load for one of the selected customers who is not a closed delta
+%test_subject = ev_customer_IDs(1);
+% test_subject = "P34C9";
 % customer_base_loads_tt.Time.Format = 'hh:mm';
 % 
 % customer_info_split = strsplit(test_subject, 'C');
@@ -367,6 +413,11 @@ scenario_details
 % 
 % plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
 % hold off
+% 
+
+
+
+
 % %% Validating at the TF level -- CLOSED DELTA
 % test_subject = closed_delta_test_subject;
 % customer_info_split = strsplit(test_subject, 'C');
