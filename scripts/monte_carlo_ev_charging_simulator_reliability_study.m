@@ -6,7 +6,6 @@ tf_list_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West
 charging_events_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\misc\charging_events.mat";
 balanced_eba_hres_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
 
-rng(1);
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
 
@@ -266,7 +265,7 @@ set(hAx,'YGrid','on','XGrid','on')
 hold on
 
 % %plot modified load in red
-plot(test_subject_modified_load,'Time',tf_ID,'Color','red')
+plot(test_subject_modified_load,'Time',tf_ID,'Color','red','LineStyle','--')
 hold off
 
 %% Validating at the customer level -- CLOSED DELTA
