@@ -1,7 +1,9 @@
 clc
 clear all
 
-balanced_eba_hres_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+balanced_eba_hres_path = "C:\Users\shank\Local Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+%balanced_eba_hres_path = "C:\Users\Shankar Ramharack\OneDrive - The University of the West Indies, St. Augustine\Desktop\EV-Grid-Integration-Study\data\balanced loads\balanced_eba_hres.csv";
+
 
 %% Load Balanced Euclidean Barycenter Averaged Load Profiles
 opts = delimitedTextImportOptions("NumVariables", 507);
@@ -35,31 +37,33 @@ customer_base_loads_st = minutes(minute(customer_base_loads(1, 1).Time)); %start
 customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer_base_loads_tstep,'StartTime',customer_base_loads_st);
 
 num_feeder_customers = 2400;
-penetration_level = 0.05;
+penetration_level = 0.10;
 chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
 
 
-itr_limit = 2;
-q=0;
-averaged_loads = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+itr_limit = 1000;
+[averaged_loads,scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
     chargers_being_used,customer_base_loads_tt);
-q=0;
+
+fprintf("[+]Iteration 1\n")
 for n=1:itr_limit-1
-    q=0;
-    tmp_tbl = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+    fprintf("[+]Iteration %d \n",n+1)
+
+    [tmp_tbl,tmp_scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
     chargers_being_used,customer_base_loads_tt);
-    q=0;
+
     averaged_loads = array2timetable(table2array(tmp_tbl) + table2array(averaged_loads), ...
         'RowTimes',tmp_tbl.Properties.RowTimes,'VariableNames', ...
         tmp_tbl.Properties.VariableNames);
-    highbhbn=0;
 end
+
 %%
-q=0;
 averaged_loads = array2timetable((table2array(averaged_loads) ...
     ./itr_limit), 'RowTimes',averaged_loads.Properties.RowTimes, ...
     'VariableNames', averaged_loads.Properties.VariableNames);
 averaged_loads_T = rows2vars(averaged_loads,'VariableNamingRule','preserve');
+
+
 
 % %% Writing output
 tmp_emtp_data_pen_lvl = append('IMPS-CHARGING_LVL_',chargers_being_used);
