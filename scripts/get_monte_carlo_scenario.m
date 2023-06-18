@@ -49,11 +49,11 @@ customer_charging_levels = 0;
 
 switch(chargers_being_used)
     case "1"
-        customer_charging_levels = ones(1,num_ev_customers);
+        customer_charging_levels = ones(1,num_ev_customers,'gpuArray');
     case "2"
-        customer_charging_levels = ones(1,num_ev_customers)*2;
+        customer_charging_levels = ones(1,num_ev_customers,'gpuArray')*2;
     case "MIX"
-        customer_charging_levels = randi(2,1,num_ev_customers);
+        customer_charging_levels = randi(2,1,num_ev_customers,'gpuArray');
 end
 
 %% Generate flat profiles for both transformer variables, and transformer-customer pairings.

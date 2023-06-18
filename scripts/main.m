@@ -35,39 +35,123 @@ customer_base_loads_tstep = minutes(minutes(customer_base_loads(2,1).Time - cust
 customer_power_data = customer_base_loads(:,2:size(customer_base_loads,2)); %isolating the power readings of the original table
 customer_base_loads_st = minutes(minute(customer_base_loads(1, 1).Time)); %start time of the utilization data
 customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer_base_loads_tstep,'StartTime',customer_base_loads_st);
-
 num_feeder_customers = 2400;
-penetration_level = 0.10;
-chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
+
+parfor plvl=1:4
+    penetration_level = plvl*5/100;
+    chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
 
 
-itr_limit = 1000;
-[averaged_loads,scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
-    chargers_being_used,customer_base_loads_tt);
+    itr_limit = 1000;
+    [averaged_loads,scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+        chargers_being_used,customer_base_loads_tt);
 
-fprintf("[+]Iteration 1\n")
-for n=1:itr_limit-1
-    fprintf("[+]Iteration %d \n",n+1)
+    fprintf("[+]Iteration 1\n")
+    for n=1:itr_limit-1
+        fprintf("[+]Iteration %d \n",n+1)
 
-    [tmp_tbl,tmp_scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
-    chargers_being_used,customer_base_loads_tt);
+        [tmp_tbl,tmp_scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+            chargers_being_used,customer_base_loads_tt);
 
-    averaged_loads = array2timetable(table2array(tmp_tbl) + table2array(averaged_loads), ...
-        'RowTimes',tmp_tbl.Properties.RowTimes,'VariableNames', ...
-        tmp_tbl.Properties.VariableNames);
+        averaged_loads = array2timetable(table2array(tmp_tbl) + table2array(averaged_loads), ...
+            'RowTimes',tmp_tbl.Properties.RowTimes,'VariableNames', ...
+            tmp_tbl.Properties.VariableNames);
+    end
+
+    %%
+    averaged_loads = array2timetable((table2array(averaged_loads) ...
+        ./itr_limit), 'RowTimes',averaged_loads.Properties.RowTimes, ...
+        'VariableNames', averaged_loads.Properties.VariableNames);
+    averaged_loads_T = rows2vars(averaged_loads,'VariableNamingRule','preserve');
+
+
+
+    % %% Writing output
+    tmp_emtp_data_pen_lvl = append('IMPS-CHARGING_LVL_',chargers_being_used);
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
+    fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
+    writetable(averaged_loads_T,fname_emtp);
+    fprintf('PENETRATION LEVEL = %d, LEVEL %s',plvl,chargers_being_used)
+    averaged_loads
 end
 
-%%
-averaged_loads = array2timetable((table2array(averaged_loads) ...
-    ./itr_limit), 'RowTimes',averaged_loads.Properties.RowTimes, ...
-    'VariableNames', averaged_loads.Properties.VariableNames);
-averaged_loads_T = rows2vars(averaged_loads,'VariableNamingRule','preserve');
+
+parfor plvl=1:4
+    penetration_level = plvl*5/100;
+    chargers_being_used = "1"; % Takes on either:"1", "2" OR "MIX"
+
+
+    itr_limit = 1000;
+    [averaged_loads,scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+        chargers_being_used,customer_base_loads_tt);
+
+    fprintf("[+]Iteration 1\n")
+    for n=1:itr_limit-1
+        fprintf("[+]Iteration %d \n",n+1)
+
+        [tmp_tbl,tmp_scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+            chargers_being_used,customer_base_loads_tt);
+
+        averaged_loads = array2timetable(table2array(tmp_tbl) + table2array(averaged_loads), ...
+            'RowTimes',tmp_tbl.Properties.RowTimes,'VariableNames', ...
+            tmp_tbl.Properties.VariableNames);
+    end
+
+    %%
+    averaged_loads = array2timetable((table2array(averaged_loads) ...
+        ./itr_limit), 'RowTimes',averaged_loads.Properties.RowTimes, ...
+        'VariableNames', averaged_loads.Properties.VariableNames);
+    averaged_loads_T = rows2vars(averaged_loads,'VariableNamingRule','preserve');
 
 
 
-% %% Writing output
-tmp_emtp_data_pen_lvl = append('IMPS-CHARGING_LVL_',chargers_being_used);
-tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
-tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
-fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
-writetable(averaged_loads_T,fname_emtp);
+    % %% Writing output
+    tmp_emtp_data_pen_lvl = append('IMPS-CHARGING_LVL_',chargers_being_used);
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
+    fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
+    writetable(averaged_loads_T,fname_emtp);
+    fprintf('PENETRATION LEVEL = %d, LEVEL %s',plvl,chargers_being_used)
+    averaged_loads
+end
+
+
+parfor plvl=1:4
+    penetration_level = plvl*5/100;
+    chargers_being_used = "2"; % Takes on either:"1", "2" OR "MIX"
+
+
+    itr_limit = 1000;
+    [averaged_loads,scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+        chargers_being_used,customer_base_loads_tt);
+
+    fprintf("[+]Iteration 1\n")
+    for n=1:itr_limit-1
+        fprintf("[+]Iteration %d \n",n+1)
+
+        [tmp_tbl,tmp_scn_details] = get_monte_carlo_scenario(num_feeder_customers,penetration_level, ...
+            chargers_being_used,customer_base_loads_tt);
+
+        averaged_loads = array2timetable(table2array(tmp_tbl) + table2array(averaged_loads), ...
+            'RowTimes',tmp_tbl.Properties.RowTimes,'VariableNames', ...
+            tmp_tbl.Properties.VariableNames);
+    end
+
+    %%
+    averaged_loads = array2timetable((table2array(averaged_loads) ...
+        ./itr_limit), 'RowTimes',averaged_loads.Properties.RowTimes, ...
+        'VariableNames', averaged_loads.Properties.VariableNames);
+    averaged_loads_T = rows2vars(averaged_loads,'VariableNamingRule','preserve');
+
+
+
+    % %% Writing output
+    tmp_emtp_data_pen_lvl = append('IMPS-CHARGING_LVL_',chargers_being_used);
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
+    tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
+    fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
+    writetable(averaged_loads_T,fname_emtp);
+    fprintf('PENETRATION LEVEL = %d, LEVEL %s',plvl,chargers_being_used)
+    averaged_loads
+end
