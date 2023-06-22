@@ -1,6 +1,6 @@
-function [modified_customer_IDs,CD_TF_RBs,CD_TFC_RBs] = get_modified_customer_ID(tf_details_filepath,closed_deltas)
+function [viable_IDs,CD_TF_RBs,CD_TFC_RBs] = get_modified_customer_ID(tf_details_filepath,closed_deltas)
 %declaring variable to hold prefixed IDs
-modified_customer_IDs = [];
+viable_IDs = [];
 CD_TFC_RBs = []; %close delta customer level variables, eg. P115RC2
 CD_TF_RBs = []; %closed delta transformer level variables eg. P115R
 
@@ -40,7 +40,7 @@ for x=1:215
                 customer_w = append(append(tf_P_ID,"C"),num2str(i));
                 customer_r = append(append(tf_P_ID,"RC"),num2str(i));
                 customer_b = append(append(tf_P_ID,"BC"),num2str(i));
-                modified_customer_IDs = [modified_customer_IDs,customer_w];
+                viable_IDs = [viable_IDs,customer_w];
 
                 CD_TFC_RBs = [CD_TFC_RBs,customer_r];
                 CD_TFC_RBs = [CD_TFC_RBs,customer_b];
@@ -51,7 +51,7 @@ for x=1:215
                 %creating prefixed string for the ith cutomer
                 customer_w = append(append(tf_P_ID,"C"),num2str(i));
                 %appending to tf_customer list
-                modified_customer_IDs = [modified_customer_IDs,customer_w];
+                viable_IDs = [viable_IDs,customer_w];
             end
         end
     end

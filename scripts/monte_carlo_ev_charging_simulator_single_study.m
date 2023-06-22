@@ -48,7 +48,7 @@ customer_base_loads_tt = table2timetable(customer_power_data,'TimeStep',customer
 
 num_feeder_customers = 2400;
 penetration_level = 0.20;
-chargers_being_used = "1"; % Takes on either:"1", "2" OR "MIX"
+chargers_being_used = "MIX"; % Takes on either:"1", "2" OR "MIX"
 
 
 %----------------------------------------------------------------------------------
@@ -214,7 +214,10 @@ for x=1:num_ev_customers
 
     else
         TF_CUSTOMER_flat_profiles_timetable{pre_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
-            pre_overflow_mask,customer_ID} + ones(num_timestamps_pre_overflow,1)*charging_load;
+            pre_overflow_mask,customer_
+        
+        
+        ID} + ones(num_timestamps_pre_overflow,1)*charging_load;
 
         TF_CUSTOMER_flat_profiles_timetable{post_overflow_mask,customer_ID} = TF_CUSTOMER_flat_profiles_timetable{ ...
             post_overflow_mask,customer_ID} + ones(num_timestamps_post_overflow,1)*charging_load;
@@ -261,23 +264,59 @@ end
 
 scenario_details
 
-modified_base_load.Time.Format = 'hh:mm';
-modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
+% modified_base_load.Time.Format = 'hh:mm';
+%%
 
-tmp_emtp_data_pen_lvl = append('CHARGING_LVL_',chargers_being_used);
-tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
-tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
-fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
-writetable(modified_base_load_T,fname_emtp);
+base = customer_base_loads_tt;
+mod = modified_base_load;
+
+names = modified_base_load.Properties.VariableNames;
+
+p_mask = arrayfun(@(x) contains(x,"P"),names);
+q_mask = arrayfun(@(x) contains(x,"Q"),names);
+
+
+base_p_loads = base(:,names(p_mask));
+base_q_loads = base(:,names(q_mask));
+cross_sec_base_p = sum(table2array(base_p_loads),2).^2;
+cross_sec_base_q = sum(table2array(base_q_loads),2).^2;
+base_s_loads_arr = sqrt(cross_sec_base_p + cross_sec_base_q);
+base_s_loads = timetable(base_s_loads_arr,'RowTimes',base.Properties.RowTimes','VariableNames',"S/kVA");
+base_s_loads.Time.Format = 'hh:mm'
+
+
+modified_p_loads = mod(:,names(p_mask));
+modified_q_loads = mod(:,names(q_mask));
+cross_sec_agg_p = sum(table2array(modified_p_loads),2).^2;
+cross_sec_agg_q = sum(table2array(modified_q_loads),2).^2;
+modfied_s_loads_arr = sqrt(cross_sec_agg_p + cross_sec_agg_q);
+modified_s_loads = timetable(modfied_s_loads_arr,'RowTimes',mod.Properties.RowTimes','VariableNames',"S/kVA");
+modified_s_loads.Time.Format = 'hh:mm'
+
+
+figure;
+hold on
+plot(base_s_loads,"Time","S/kVA");
+grid on
+plot(modified_s_loads,"Time","S/kVA","Color",'red');
+
+
+% modified_base_load_T = rows2vars(modified_base_load,'VariableNamingRule','preserve');
+% 
+% tmp_emtp_data_pen_lvl = append('CHARGING_LVL_',chargers_being_used);
+% tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,'_PEN_LVL_');
+% tmp_emtp_data_pen_lvl = append(tmp_emtp_data_pen_lvl,num2str(penetration_level));
+% fname_emtp = append(tmp_emtp_data_pen_lvl,'.csv');
+% writetable(modified_base_load_T,fname_emtp);
 
 
 %% Writing scenario details
 
-tmp_sd_pen_lvl = append('SCN_CHARGING_LVL_',chargers_being_used)
-tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,'_PEN_LVL_');
-tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,num2str(penetration_level));
-fname_sd = append(tmp_sd_pen_lvl,'.csv');
-writetable(scenario_details,fname_sd); %STEP 4 CHANGE NAME OF SCN FILE
+% tmp_sd_pen_lvl = append('SCN_CHARGING_LVL_',chargers_being_used)
+% tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,'_PEN_LVL_');
+% tmp_sd_pen_lvl = append(tmp_sd_pen_lvl,num2str(penetration_level));
+% fname_sd = append(tmp_sd_pen_lvl,'.csv');
+% writetable(scenario_details,fname_sd); %STEP 4 CHANGE NAME OF SCN FILE
 
 %% Validating at the customer level -- REG. CONFIG
 %Adding load for one of the selected customers who is not a closed delta
