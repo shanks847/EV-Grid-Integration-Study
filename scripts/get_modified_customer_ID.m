@@ -45,8 +45,6 @@ for x=1:215
                 CD_TFC_RBs = [CD_TFC_RBs,customer_r];
                 CD_TFC_RBs = [CD_TFC_RBs,customer_b];
 
-                CD_TF_RBs = [CD_TF_RBs,customer_r];
-                CD_TF_RBs = [CD_TF_RBs,customer_b];
             else
                 %creating prefixed string for the ith cutomer
                 customer_w = append(append(tf_P_ID,"C"),num2str(i));

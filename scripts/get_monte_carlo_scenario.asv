@@ -53,7 +53,7 @@ switch(chargers_being_used)
     case "2"
         customer_charging_levels = ones(1,num_ev_customers,'gpuArray')*2;
     case "MIX"
-        customer_charging_levels = randi(2,1,num_ev_customers,);
+        customer_charging_levels = randi(2,1,num_ev_customers,'gpuArray');
 end
 
 %% Generate flat profiles for both transformer variables, and transformer-customer pairings.
@@ -203,18 +203,55 @@ for x=1:num_ev_customers
         customer_B_ID = append(tf_ID_B,"C");
         customer_B_ID = append(customer_B_ID,CID);
 
-        modified_base_load(:,tf_ID) = num2cell(modified_base_load{:,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,customer_ID});
-        modified_base_load(:,tf_ID_R) = num2cell(modified_base_load{:,tf_ID_R} + TF_CUSTOMER_flat_profiles_timetable{:,customer_R_ID});
-        modified_base_load(:,tf_ID_B) = num2cell(modified_base_load{:,tf_ID_B} + TF_CUSTOMER_flat_profiles_timetable{:,customer_B_ID});
+        modified_base_load(:,tf_ID) = num2cell(modified_base_load{:,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
+        modified_base_load(:,tf_ID_R) = num2cell(modified_base_load{:,tf_ID_R} + TFPID_flat_profiles_timetable{:,tf_ID});
+        modified_base_load(:,tf_ID_B) = num2cell(modified_base_load{:,tf_ID_B} + TFPID_flat_profiles_timetable{:,tf_ID});
     else
-        modified_base_load(:,tf_ID) = num2cell(modified_base_load{:,tf_ID} + TF_CUSTOMER_flat_profiles_timetable{:,customer_ID});
+        modified_base_load(:,tf_ID) = num2cell(modified_base_load{:,tf_ID} + TFPID_flat_profiles_timetable{:,tf_ID});
 
     end
 
 end
 
+
+
+%% Validating at the feeder level
+base = customer_base_loads_tt;
+mod = modified_base_load;
+
+names = modified_base_load.Properties.VariableNames;
+
+p_mask = arrayfun(@(x) contains(x,"P"),names);
+q_mask = arrayfun(@(x) contains(x,"Q"),names);
+
+
+base_p_loads = base(:,names(p_mask));
+base_q_loads = base(:,names(q_mask));
+cross_sec_base_p = sum(table2array(base_p_loads),2).^2;
+cross_sec_base_q = sum(table2array(base_q_loads),2).^2;
+base_s_loads_arr = sqrt(cross_sec_base_p + cross_sec_base_q);
+base_s_loads = timetable(base_s_loads_arr,'RowTimes',base.Properties.RowTimes','VariableNames',"S/kVA");
+base_s_loads.Time.Format = 'hh:mm'
+
+
+modified_p_loads = mod(:,names(p_mask));
+modified_q_loads = mod(:,names(q_mask));
+cross_sec_agg_p = sum(table2array(modified_p_loads),2).^2;
+cross_sec_agg_q = sum(table2array(modified_q_loads),2).^2;
+modfied_s_loads_arr = sqrt(cross_sec_agg_p + cross_sec_agg_q);
+modified_s_loads = timetable(modfied_s_loads_arr,'RowTimes',mod.Properties.RowTimes','VariableNames',"S/kVA");
+modified_s_loads.Time.Format = 'hh:mm'
+
+
+figure;
+hold on
+plot(base_s_loads,"Time","S/kVA")
+grid on
+plot(modified_s_loads,"Time","S/kVA")
+hold off
+
 %% Writing scenario details
-modified_base_load.Time.Format = 'hh:mm';
+% modified_base_load.Time.Format = 'hh:mm';
 %scenario_details
 %% Validating at the customer level -- REG. CONFIG
 %Adding load for one of the selected customers who is not a closed delta
